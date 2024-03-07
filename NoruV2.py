@@ -2375,7 +2375,6 @@ class UI(SQL):
         record_frame = tk.Frame(self.window, name="record_frame")
 
         def record_setting():
-            #test
             code_sort = [False, False, False, False, False]
             data_sort = [False, False, False, False, False, False]
 

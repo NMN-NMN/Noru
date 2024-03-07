@@ -2374,6 +2374,11 @@ class UI(SQL):
         data_frame = tk.Frame(self.window, name="data_frame", bd=1, relief="sunken")
         record_frame = tk.Frame(self.window, name="record_frame")
 
+        with open("version.txt", "r") as file:
+            MAIN_VERSION = file.read()
+
+        tk.Label(main_frame, font=("TkDefaultFont", 12), text=f"현재 버전: {MAIN_VERSION}").place(relx=0.5, rely=0.9, anchor="n")
+
         def record_setting():
             code_sort = [False, False, False, False, False]
             data_sort = [False, False, False, False, False, False]

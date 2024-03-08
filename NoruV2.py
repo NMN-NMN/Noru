@@ -2429,53 +2429,13 @@ class UI(SQL):
                 if num == 0:
                     self.datas["code"].sort(key=lambda x: x[3], reverse=code_sort[num])
                 elif num == 1:
-                    sort_list = [(x[2][0][1], x) for x in self.datas["code"] if x[2]]
-                    sort_list.sort(key=lambda x: x[0], reverse=code_sort[num])
-                    for value in sort_list:
-                        del self.datas["code"][self.datas["code"].index(value[1])]
-                        self.datas["code"].append(value[1])
-                    self.datas["code"].sort(key=lambda x: -len(x[2]), reverse=code_sort[num])
+                    self.datas["code"].sort(key=lambda x: x[2][0][1] if len(x[2]) > 0 else "", reverse=code_sort[num])
                 elif num == 2:
-                    sort_list = [(x[0][0][1], x) for x in self.datas["code"] if x[0]]
-                    sort_list.sort(key=lambda x: x[0], reverse=code_sort[num])
-                    for value in sort_list:
-                        del self.datas["code"][self.datas["code"].index(value[1])]
-                        self.datas["code"].append(value[1])
-                    self.datas["code"].sort(key=lambda x: -len(x[0]), reverse=code_sort[num])
+                    self.datas["code"].sort(key=lambda x: x[0][0][1] if len(x[0]) > 0 else "", reverse=code_sort[num])
                 elif num == 3:
-                    sort_list = []
-                    for value in self.datas["code"]:
-                        try:
-                            sort_list.append((value[4], value))
-                        except:
-                            pass
-                    sort_list.sort(key=lambda x: x[0], reverse=not code_sort[num])
-
-                    for idx, value in enumerate(sort_list):
-                        sort_list[idx] = value[1]
-                        del self.datas["code"][self.datas["code"].index(value[1])]
-                    
-                    if code_sort[num]:
-                        self.datas["code"] = sort_list + self.datas["code"]
-                    else:
-                        self.datas["code"] = self.datas["code"] + sort_list
+                    self.datas["code"].sort(key=lambda x: x[4] if len(x) > 4 else "", reverse=code_sort[num])
                 else:
-                    sort_list = []
-                    for value in self.datas["code"]:
-                        try:
-                            sort_list.append((value[5], value))
-                        except:
-                            pass
-                    sort_list.sort(key=lambda x: bool(x[0]), reverse=code_sort[num])
-
-                    for idx, value in enumerate(sort_list):
-                        sort_list[idx] = value[1]
-                        del self.datas["code"][self.datas["code"].index(value[1])]
-                    
-                    if code_sort[num]:
-                        self.datas["code"] = sort_list + self.datas["code"]
-                    else:
-                        self.datas["code"] = self.datas["code"] + sort_list
+                    self.datas["code"].sort(key=lambda x: bool(x[5]) if len(x) > 4 else False, reverse=code_sort[num])
                 
                 code_sort[num] = False if code_sort[num] else True
 
@@ -2483,9 +2443,6 @@ class UI(SQL):
 
                 for i in range(len(self.datas["code"])):
                     self.Add_result(code_preview_frame.children["canvas"], "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i, i)
-
-                # for i, ii in enumerate(self.datas["code"]):
-                #     print(i, " / ", ii)
 
             tk.Button(label_frame, text="파일명", command=lambda: order_code(0)).place(x=28, rely=0.5, width=83, anchor="w")
             tk.Button(label_frame, text="그룹코드", command=lambda: order_code(1)).place(x=116, rely=0.5, width=60, anchor="w")
@@ -2521,21 +2478,28 @@ class UI(SQL):
 
             def order_data(num):
                 if num == 0:
-                    self.datas["data"].sort(key=lambda x: x[3], reverse=data_sort[num])
-                
+                    self.datas["data"].sort(key=lambda x: x[4], reverse=data_sort[num])
+                elif num == 1:
+                    self.datas["data"].sort(key=lambda x: x[0][0][0] if len(x[0]) > 0 else (x[1][0][0] if len(x[1]) > 0 else (x[2][0][0] if len(x[2]) > 0 else (x[3][0][0] if len(x[3]) > 0 else ""))), reverse=data_sort[num])
+                elif num == 2:
+                    self.datas["data"].sort(key=lambda x: x[0][0][1] if len(x[0]) > 0 else (x[1][0][2] if len(x[1]) > 0 else (x[2][0][1] if len(x[2]) > 0 else (x[3][0][12] if len(x[3]) > 0 else ""))), reverse=data_sort[num])
+                elif num == 3:
+                    self.datas["data"].sort(key=lambda x: x[3][0][4] if len(x[3]) > 0 else "", reverse=data_sort[num])
+                elif num == 4:
+                    self.datas["data"].sort(key=lambda x: x[5] if len(x) > 5 else "", reverse=data_sort[num])
+                else:
+                    self.datas["data"].sort(key=lambda x: bool(x[6]) if len(x) > 5 else False, reverse=data_sort[num])
+
                 data_sort[num] = False if data_sort[num] else True
 
                 change_page(int(self.window.nametowidget(".record_frame.!frame.!frame3.now")["text"]))
 
-                # for i, ii in enumerate(self.datas["code"]):
-                #     print(i, " / ", ii)
-
             tk.Button(label_frame, text="파일명", command=lambda: order_data(0)).place(x=29, rely=0.5, width=83, anchor="w")
-            tk.Button(label_frame, text="배합코드").place(x=117, rely=0.5, width=77, anchor="w")
-            tk.Button(label_frame, text="타입").place(x=199, rely=0.5, width=35, anchor="w")
-            tk.Button(label_frame, text="컬러코드").place(x=239, rely=0.5, width=80, anchor="w")
-            tk.Button(label_frame, text="작성시간").place(x=324, rely=0.5, width=70, anchor="w")
-            tk.Button(label_frame, text="휴지통").place(x=399, rely=0.5, width=50, anchor="w")
+            tk.Button(label_frame, text="배합코드", command=lambda: order_data(1)).place(x=117, rely=0.5, width=77, anchor="w")
+            tk.Button(label_frame, text="타입", command=lambda: order_data(2)).place(x=199, rely=0.5, width=35, anchor="w")
+            tk.Button(label_frame, text="컬러코드", command=lambda: order_data(3)).place(x=239, rely=0.5, width=80, anchor="w")
+            tk.Button(label_frame, text="작성시간", command=lambda: order_data(4)).place(x=324, rely=0.5, width=70, anchor="w")
+            tk.Button(label_frame, text="휴지통", command=lambda: order_data(5)).place(x=399, rely=0.5, width=50, anchor="w")
 
             for i in label_frame.winfo_children():
                 self.useble_widgets.append(i)

@@ -2928,7 +2928,7 @@ V0.1 (2024.03.03):
         tk.Button(main_frame, text="코드 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(code_frame, main_frame, 750, 380)).place(relx=0.5, rely=0.25, anchor="center")
         tk.Button(main_frame, text="데이터 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(data_frame, main_frame, 950, 940)).place(relx=0.5, rely=0.5, anchor="center")
         tk.Button(main_frame, text="기록 조회", font=main_font, bd=3, width=12, command=lambda: self.change_frames(record_frame, main_frame, 1000, 440)).place(relx=0.5, rely=0.75, anchor="center")
-        tk.Button(main_frame, font=("TkDefaultFont", 10), text="패치 내역", command=lambda: self.change_frames(patch_frame, main_frame, 400, 400)).place(relx=0.875, rely=0.9, anchor="n")
+        tk.Button(main_frame, font=("TkDefaultFont", 10), text="패치 내역", command=lambda: self.change_frames(patch_frame, main_frame, 400, 400)).place(relx=0.5, rely=0.5, anchor="n")
 
         main_frame.place(x=0, y=0, width=400, height=400)
 

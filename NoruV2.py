@@ -1085,7 +1085,7 @@ class SQL():
                     except:
                         print(f"{table} {column_index} Droping Index Fail")
 
-    def Add_result(self, root, file_name, data_type, data, data_index):
+    def Add_result(self, root, file_name, data_type, data, place_index, data_index):
         if data_type == "code":
             frame = tk.LabelFrame(root, name=f"no_{str(data_index)}", width=430, height=45, labelanchor="n")
 
@@ -1123,7 +1123,7 @@ class SQL():
 
             tk.Button(frame, name="edit", text="수정", command=lambda: self.Edit_row("code", data_index), takefocus=False).place(x=390, rely=0.5, width=30, anchor="w")
 
-            root.create_window(0, 45 * data_index, window=frame, tags=("result", f"no_{str(data_index)}"))
+            root.create_window(0, 45 * place_index, window=frame, tags=("result", f"no_{str(data_index)}"))
         else:
             search_type_postition = [1, 2, 1 ,12]
             frame = tk.Frame(root, name=f"no_{str(data_index)}", bd=1, relief="raised", width=500, height=28)
@@ -1175,7 +1175,7 @@ class SQL():
 
             tk.Button(frame, name="edit", text="수정", command=lambda: self.Edit_row("data", data_index), takefocus=False).place(x=460, rely=0.5, width=30, anchor="w")
 
-            root.create_window(0, 28 * data_index, window=frame, tags=("result", f"no_{str(data_index)}"))
+            root.create_window(0, 28 * place_index, window=frame, tags=("result", f"no_{str(data_index)}"))
     
     def Apply_preview_result(self):
         code_canvas = self.window.nametowidget(".record_frame.!frame.preview.outer0.canvas")
@@ -1195,7 +1195,7 @@ class SQL():
         page_max["text"] = str(math.ceil(len(self.datas["data"]) / view_count)) if len(self.datas["data"]) > 0 else "1"
 
         for i in range(len(self.datas["code"])):
-            self.Add_result(code_canvas, "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i)
+            self.Add_result(code_canvas, "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i, i)
         
         for i in code_canvas.winfo_children():
             i.children["checkbutton"].state(["!selected"])
@@ -1204,7 +1204,7 @@ class SQL():
         code_canvas.configure(scrollregion=code_canvas.bbox("all"))
 
         for i in range(view_count if len(self.datas["data"]) > view_count else len(self.datas["data"])):
-            self.Add_result(data_canvas, "r_V2.accdb" if self.datas["data"][i][4] == 0 else "new_auto.mdb", "data", self.datas["data"][i], i)
+            self.Add_result(data_canvas, "r_V2.accdb" if self.datas["data"][i][4] == 0 else "new_auto.mdb", "data", self.datas["data"][i], i, i)
         
         for i in data_canvas.winfo_children():
             i.children["checkbutton"].state(["!selected"])
@@ -2373,6 +2373,7 @@ class UI(SQL):
         code_frame = tk.Frame(self.window, name="code_frame", bd=1, relief="sunken")
         data_frame = tk.Frame(self.window, name="data_frame", bd=1, relief="sunken")
         record_frame = tk.Frame(self.window, name="record_frame")
+        patch_frame = tk.Frame(self.window, name="patch_frame")
 
         with open("version.txt", "r") as file:
             MAIN_VERSION = file.read()
@@ -2481,7 +2482,7 @@ class UI(SQL):
                 code_preview_frame.children["canvas"].delete("result")
 
                 for i in range(len(self.datas["code"])):
-                    self.Add_result(code_preview_frame.children["canvas"], "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i)
+                    self.Add_result(code_preview_frame.children["canvas"], "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i, i)
 
                 # for i, ii in enumerate(self.datas["code"]):
                 #     print(i, " / ", ii)
@@ -2518,7 +2519,18 @@ class UI(SQL):
             label_frame = tk.Frame(data_preview_frame, bd=1, relief="raised")
             label_frame.place(x=0, y=0, width=518, height=30)
 
-            tk.Button(label_frame, text="파일명").place(x=29, rely=0.5, width=83, anchor="w")
+            def order_data(num):
+                if num == 0:
+                    self.datas["data"].sort(key=lambda x: x[3], reverse=data_sort[num])
+                
+                data_sort[num] = False if data_sort[num] else True
+
+                change_page(int(self.window.nametowidget(".record_frame.!frame.!frame3.now")["text"]))
+
+                # for i, ii in enumerate(self.datas["code"]):
+                #     print(i, " / ", ii)
+
+            tk.Button(label_frame, text="파일명", command=lambda: order_data(0)).place(x=29, rely=0.5, width=83, anchor="w")
             tk.Button(label_frame, text="배합코드").place(x=117, rely=0.5, width=77, anchor="w")
             tk.Button(label_frame, text="타입").place(x=199, rely=0.5, width=35, anchor="w")
             tk.Button(label_frame, text="컬러코드").place(x=239, rely=0.5, width=80, anchor="w")
@@ -2544,6 +2556,10 @@ class UI(SQL):
 
             # Data Preview page
             def change_page(page):
+                if page == None:
+                    self.window.nametowidget(".record_frame.!frame.!frame3.entry").insert(0, self.window.nametowidget(".record_frame.!frame.!frame3.now")["text"])
+                    return
+
                 max = self.window.nametowidget(".record_frame.!frame.!frame3.max")["text"]
                 view_count = int(self.window.nametowidget(".record_frame.!frame.!frame3.!combobox").get())
                 datas = self.datas["data"][view_count * (page - 1):view_count * page if page != int(max) else len(self.datas["data"])]
@@ -2604,14 +2620,14 @@ class UI(SQL):
                 change_page(1)
 
             def num_filter(text, input):
-                if text == "" or input in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] or text.isdeimal():
+                if text == "" or input in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] or text.isdecimal():
                     return True
                 return False
 
             tk.Button(page_frame, name="left_end", state="disabled", text="<<", command=lambda: left(True), takefocus=False, width=3).place(relx=0.1, y=0, height=24, anchor="n")
             tk.Button(page_frame, name="left", state="disabled", text="<", command=lambda: left(False), takefocus=False, width=3).place(relx=0.2, y=0, height=24, anchor="n")
             tk.Entry(page_frame, name="entry", validate="all", validatecommand=(page_frame.register(num_filter), "%P", "%S"), state="disabled", takefocus=False).place(relx=0.325, y=0, width=35, height=22, anchor="n")
-            tk.Button(page_frame, text="이동", state="disabled", takefocus=False, command=lambda: change_page(int(self.window.nametowidget(".record_frame.!frame.!frame3.entry").get()))).place(relx=0.4, y=0, width=35, height=22, anchor="n")
+            tk.Button(page_frame, text="이동", state="disabled", takefocus=False, command=lambda: change_page(int(self.window.nametowidget(".record_frame.!frame.!frame3.entry").get()) if self.window.nametowidget(".record_frame.!frame.!frame3.entry").get() != "" else None)).place(relx=0.4, y=0, width=35, height=22, anchor="n")
             tk.Label(page_frame, name="now", text="1", anchor="e").place(relx=0.47, y=0, width=25, height=22, anchor="n")
             tk.Label(page_frame, text="/").place(relx=0.5, y=0, width=5, height=22, anchor="n")
             tk.Label(page_frame, name="max", text="1", anchor="w").place(relx=0.5325, y=0, width=25, height=22, anchor="n")
@@ -2871,9 +2887,38 @@ class UI(SQL):
             for i in menu_one.winfo_children():
                 self.useble_widgets.append(i)
 
+        def patch_setting():
+            canvas = tk.Canvas(patch_frame, name="canvas", highlightthickness=0, bd=1, relief="sunken")
+            canvas.place(x=10, y=10, width=360, height=340)
+
+            scrollbar = tk.Scrollbar(patch_frame, name="scrollbar")
+            scrollbar.place(x=370, y=10, width=20, height=340)
+
+            scrollbar.configure(command=canvas.yview)
+            canvas.configure(yscrollcommand=scrollbar.set)
+
+            context = """V0.3 (2024.03.08):
+        + 기록 검색 결과 정렬 기능 추가.
+        + 기타 버그 및 에러 수정.
+
+V0.2 (2024.03.07): 
+        + 자동 업데이트 기능 추가.
+        + new_auto.mdb 데이터 삭제가 안되던 오류 픽스.
+
+V0.1 (2024.03.03):
+        최초배포버전."""
+            text = tk.Label(canvas, font=("TkDefaultFont", 10), text=context, width=43, justify="left", anchor="nw", wraplength=345)
+            canvas.create_window(5, 5, anchor="nw", window=text)
+
+            canvas.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+            tk.Button(patch_frame, text="뒤로가기", takefocus=False, command=lambda: self.change_frames(main_frame, patch_frame, 400, 400)).place(relx=0.825, rely=0.91)
+
         self.code_setting(code_frame, main_frame)
         self.data_setting(data_frame, main_frame)
         record_setting()
+        patch_setting()
 
         # Setting main screen
 
@@ -2883,6 +2928,7 @@ class UI(SQL):
         tk.Button(main_frame, text="코드 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(code_frame, main_frame, 750, 380)).place(relx=0.5, rely=0.25, anchor="center")
         tk.Button(main_frame, text="데이터 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(data_frame, main_frame, 950, 940)).place(relx=0.5, rely=0.5, anchor="center")
         tk.Button(main_frame, text="기록 조회", font=main_font, bd=3, width=12, command=lambda: self.change_frames(record_frame, main_frame, 1000, 440)).place(relx=0.5, rely=0.75, anchor="center")
+        tk.Button(main_frame, font=("TkDefaultFont", 10), text="패치 내역", command=lambda: self.change_frames(patch_frame, main_frame, 400, 400)).place(relx=0.875, rely=0.9, anchor="n")
 
         main_frame.place(x=0, y=0, width=400, height=400)
 

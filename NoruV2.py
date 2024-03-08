@@ -604,10 +604,7 @@ class SQL():
 
             tk.Label(frame, text=data[-1][:10]).place(x=439, rely=0.5, width=110, anchor="w")
 
-            root.create_window(0, 30 * i, anchor="nw", window=frame, tags=f"no_{i}")
-
-        def order_set(num):
-            return
+            root.create_window(0, 30 * i, anchor="nw", window=frame, tags=("result", f"no_{i}"))
 
         def select_all_data(root, isSelect):
             for i in root.winfo_children():
@@ -706,6 +703,8 @@ class SQL():
             
             window.destroy()
 
+        trash_sort = [False, False, False, False, False, False, False]
+
         trash_window = tk.Toplevel(self.window)
         trash_window.geometry("600x400")
         trash_window.title("휴지통")
@@ -719,13 +718,39 @@ class SQL():
         label_frame = tk.Frame(frame, bd=1, relief="raised")
         label_frame.place(x=0, y=0, width=578, height=30)
 
-        tk.Button(label_frame, text="데이터").place(x=30, rely=0.5, width=60, anchor="w")
-        tk.Button(label_frame, text="그룹코드").place(x=95, rely=0.5, width=60, anchor="w")
-        tk.Button(label_frame, text="Minorcd").place(x=160, rely=0.5, width=67, anchor="w")
-        tk.Button(label_frame, text="배합코드").place(x=232, rely=0.5, width=77, anchor="w")
-        tk.Button(label_frame, text="타입").place(x=314, rely=0.5, width=35, anchor="w")
-        tk.Button(label_frame, text="컬러코드").place(x=354, rely=0.5, width=80, anchor="w")
-        tk.Button(label_frame, text="시간").place(x=439, rely=0.5, width=110, anchor="w")
+        def order_trash(num):
+            if num == 0:
+                self.trash_data.sort(key=lambda x: x[1], reverse=trash_sort[num])
+            elif num == 1:
+                self.trash_data.sort(key=lambda x: x[2] if x[1] == "CODE" else "", reverse=trash_sort[num])
+            elif num == 2:
+                self.trash_data.sort(key=lambda x: x[3] if x[1] == "CODE" else "", reverse=trash_sort[num])
+            elif num == 3:
+                self.trash_data.sort(key=lambda x: x[2] if x[1] == "DATA" else "", reverse=trash_sort[num])
+            elif num == 4:
+                self.trash_data.sort(key=lambda x: x[3] if x[1] == "DATA" else "", reverse=trash_sort[num])
+            elif num == 5:
+                self.trash_data.sort(key=lambda x: x[4] if x[1] == "DATA" else "", reverse=trash_sort[num])
+            else:
+                self.trash_data.sort(key=lambda x: x[-1], reverse=trash_sort[num])
+            
+            trash_sort[num] = not trash_sort[num]
+
+            frame.children["canvas"].delete("result")
+
+            for idx, data in enumerate(self.trash_data):
+                add_trash(frame.children["canvas"], data, idx)
+            
+            canvas.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        tk.Button(label_frame, text="데이터", command=lambda: order_trash(0)).place(x=30, rely=0.5, width=60, anchor="w")
+        tk.Button(label_frame, text="그룹코드", command=lambda: order_trash(1)).place(x=95, rely=0.5, width=60, anchor="w")
+        tk.Button(label_frame, text="Minorcd", command=lambda: order_trash(2)).place(x=160, rely=0.5, width=67, anchor="w")
+        tk.Button(label_frame, text="배합코드", command=lambda: order_trash(3)).place(x=232, rely=0.5, width=77, anchor="w")
+        tk.Button(label_frame, text="타입", command=lambda: order_trash(4)).place(x=314, rely=0.5, width=35, anchor="w")
+        tk.Button(label_frame, text="컬러코드", command=lambda: order_trash(5)).place(x=354, rely=0.5, width=80, anchor="w")
+        tk.Button(label_frame, text="시간", command=lambda: order_trash(6)).place(x=439, rely=0.5, width=110, anchor="w")
 
         canvas = tk.Canvas(frame, name="canvas", highlightthickness=0)
         canvas.place(x=0, y=30, width=560, height=270)
@@ -1134,13 +1159,13 @@ class SQL():
             if not (len(data[0]) > 0 and len(data[1]) > 0 and len(data[2]) > 0 and len(data[3]) > 0):
                 frame["bg"] = "#DF6464"
                 style = ttk.Style()
-                style.map("custom.TCheckbutton", background=[("", "#DF6464")])
-                check_button["style"] = "custom.TCheckbutton"
+                style.map(f"custom_{data_index}.TCheckbutton", background=[("", "#DF6464")])
+                check_button["style"] = f"custom_{data_index}.TCheckbutton"
             elif len(data) > 7:
                 frame["bg"] = "#3CB043"
                 style = ttk.Style()
-                style.map("custom.TCheckbutton", background=[("", "#3CB043")])
-                check_button["style"] = "custom.TCheckbutton"
+                style.map(f"custom_{data_index}.TCheckbutton", background=[("", "#3CB043")])
+                check_button["style"] = f"custom_{data_index}.TCheckbutton"
 
             check_button.state(["!alternate"])
 
@@ -2172,16 +2197,9 @@ class UI(SQL):
             data = self.datas["data"][data_index]
             
             for frame_idx in range(2 if len(data) > 7 else 1):
-                widget1 = [widget if widget.winfo_class() != "Label" else "deleteme" for widget in one_frame.children[f"frame{str(frame_idx)}"].winfo_children()]
-                widget3 = [widget if widget.winfo_class() != "Label" else "deleteme" for widget in three_frame.children[f"frame{str(frame_idx)}"].winfo_children()]
-                widget4 = [widget if widget.winfo_class() != "Label" else "deleteme" for widget in four_frame.children[f"frame{str(frame_idx)}"].winfo_children()]
-
-                for i in (widget1, widget3, widget4):
-                    while True:
-                        try:
-                            del i[i.index("deleteme")]
-                        except:
-                            break
+                widget1 = [widget for widget in one_frame.children[f"frame{str(frame_idx)}"].winfo_children() if widget.winfo_class() != "Label"]
+                widget3 = [widget for widget in three_frame.children[f"frame{str(frame_idx)}"].winfo_children() if widget.winfo_class() != "Label"]
+                widget4 = [widget for widget in four_frame.children[f"frame{str(frame_idx)}"].winfo_children() if widget.winfo_class() != "Label"]
 
                 if frame_idx == 0:
                     temp_combo = widget1[-1]
@@ -2226,23 +2244,37 @@ class UI(SQL):
                         two_frame.grid_remove()
 
                 if (len(data[2]) if frame_idx == 0 else len(data[7][2])) > 0:
+                    stop_filter.set(True)
+
                     for value, widget in zip(data[2][0] if frame_idx == 0 else data[7][2][0], widget3):
                         if widget.winfo_class() == "Entry":
+                            before_state = widget["state"]
+                            widget["state"] = "normal"
                             widget.delete(0, "end")
                             widget.insert(0, value.strip())
+                            widget["state"] = before_state
                         else:
                             widget.set(value.strip())
+                    
+                    stop_filter.set(False)
                 else:
                     if len(data[2]) <= 0:
                         three_frame.grid_remove()
 
                 if (len(data[3]) if frame_idx == 0 else len(data[7][3])) > 0:
+                    stop_filter.set(True)
+
                     for value, widget in zip(data[3][0] if frame_idx == 0 else data[7][3][0], widget4):
                         if widget.winfo_class() == "Entry":
+                            before_state = widget["state"]
+                            widget["state"] = "normal"
                             widget.delete(0, "end")
                             widget.insert(0, value.strip())
+                            widget["state"] = before_state
                         else:
                             widget.set(value.strip())
+                    
+                    stop_filter.set(False)
                 else:
                     if len(data[3]) <= 0:
                         four_frame.grid_remove()
@@ -2438,11 +2470,15 @@ class UI(SQL):
                     self.datas["code"].sort(key=lambda x: bool(x[5]) if len(x) > 4 else False, reverse=code_sort[num])
                 
                 code_sort[num] = False if code_sort[num] else True
+                canvas = code_preview_frame.children["canvas"]
 
-                code_preview_frame.children["canvas"].delete("result")
+                canvas.delete("result")
 
                 for i in range(len(self.datas["code"])):
-                    self.Add_result(code_preview_frame.children["canvas"], "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i, i)
+                    self.Add_result(canvas, "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i, i)
+
+                canvas.update_idletasks()
+                canvas.configure(scrollregion=canvas.bbox("all"))
 
             tk.Button(label_frame, text="파일명", command=lambda: order_code(0)).place(x=28, rely=0.5, width=83, anchor="w")
             tk.Button(label_frame, text="그룹코드", command=lambda: order_code(1)).place(x=116, rely=0.5, width=60, anchor="w")

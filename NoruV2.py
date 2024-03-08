@@ -1,8 +1,10 @@
 import os
 import re
+import sys
 import math
 import time
-import traceback
+import subprocess
+import requests
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
@@ -1371,6 +1373,8 @@ class UI(SQL):
         self.window.resizable(False, False)
 
         self.setting()
+        self.window.attributes("-topmost", True)
+        self.window.attributes("-topmost", False)
         self.window.mainloop()
     
     def generation_widget(self, length, names, visibles, shares, texts, widths, frame, tapables, passIndex = None):
@@ -2408,7 +2412,7 @@ class UI(SQL):
         record_frame = tk.Frame(self.window, name="record_frame")
         patch_frame = tk.Frame(self.window, name="patch_frame")
 
-        with open("version.txt", "r") as file:
+        with open(f"{os.getcwd()}\\version.txt", "r") as file:
             MAIN_VERSION = file.read()
 
         tk.Label(main_frame, font=("TkDefaultFont", 12), text=f"현재 버전: {MAIN_VERSION}").place(relx=0.5, rely=0.9, anchor="n")
@@ -2898,7 +2902,11 @@ class UI(SQL):
             scrollbar.configure(command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
 
-            context = """V0.3 (2024.03.08):
+            context = """V0.31 (2024.03.09):
+        + 문제가 있던 업데이트 런처를 없애고
+        단일 실행 파일로 합쳐졌음.
+        
+V0.3 (2024.03.08):
         + 기록 검색 결과 정렬 기능 추가.
         + 기타 버그 및 에러 수정.
 
@@ -2929,10 +2937,7 @@ V0.1 (2024.03.03):
         tk.Button(main_frame, text="코드 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(code_frame, main_frame, 750, 380)).place(relx=0.5, rely=0.25, anchor="center")
         tk.Button(main_frame, text="데이터 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(data_frame, main_frame, 950, 940)).place(relx=0.5, rely=0.5, anchor="center")
         tk.Button(main_frame, text="기록 조회", font=main_font, bd=3, width=12, command=lambda: self.change_frames(record_frame, main_frame, 1000, 440)).place(relx=0.5, rely=0.75, anchor="center")
-        test = tk.Button(main_frame, font=("TkDefaultFont", 10), text="패치 내역", command=lambda: self.change_frames(patch_frame, main_frame, 400, 400))
-        test.place(relx=0.875, rely=0.9, anchor="n")
-        with open("test.txt", "w") as file:
-            file.write(f"{test.winfo_x()} / {test.winfo_y()} / {test.winfo_rootx()} / {test.winfo_rooty()}")
+        tk.Button(main_frame, font=("TkDefaultFont", 10), text="패치 내역", command=lambda: self.change_frames(patch_frame, main_frame, 400, 400)).place(relx=0.875, rely=0.9, anchor="n")
 
         main_frame.place(x=0, y=0, width=400, height=400)
 
@@ -2961,4 +2966,59 @@ V0.1 (2024.03.03):
         except: return
 
 if __name__ == "__main__":
-    UI()
+    if len(sys.argv) < 2:
+        VERSION = ""
+        if os.path.exists(f"{os.getcwd()}\\version.txt"):
+            with open(f"{os.getcwd()}\\version.txt", "r") as file:
+                VERSION = file.read()
+        else:
+            VERSION = "first_run"
+
+        OWNER = "NMN-NMN"
+        REPO = "Noru"
+        API_URL = f"https://api.github.com/repos/{OWNER}/{REPO}"
+        API_KEY = "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"
+
+        result = requests.get(f"{API_URL}/releases/latest", auth=(OWNER, API_KEY))
+        if result.status_code != 200:
+            tkbox.showerror("실패", "깃허브 서버 접속에 실패했습니다.")
+            sys.exit(0)
+
+        result = result.json()
+        NEW_VERSION = result["tag_name"]
+
+        if NEW_VERSION != VERSION:
+            download_url = result["assets"][0]["url"]
+            download = requests.get(download_url, auth=(OWNER, API_KEY), headers={'Accept': 'application/octet-stream'}, stream=True)
+
+            if download.status_code == 200:
+                file_name = f"{os.getcwd()}\\new_NoruV2.exe"
+
+                with open(file_name, "wb") as file:
+                    for chunk in download.iter_content(chunk_size=8192*1024):
+                        file.write(chunk)
+            else:
+                tkbox.showerror("실패", "다운로드에 실패했습니다.")
+                sys.exit(0)
+
+            with open(f"{os.getcwd()}\\version.txt", "w") as file:
+                file.write(result["tag_name"])
+            
+            with open(f"{os.getcwd()}\\change.bat", "w") as bat:
+                bat.write(
+                    f"""@echo off
+del NoruV2.exe
+ren new_NoruV2.exe NoruV2.exe
+start /d \"{os.getcwd()}\" /b NoruV2.exe {VERSION} {NEW_VERSION}
+del change.bat
+exit
+"""
+                )
+
+            subprocess.Popen([f"{os.getcwd()}\\change.bat"])
+        else:
+            UI()
+    else:
+        if sys.argv[1] != "first_run":
+            tkbox.showinfo("성공", f"최신 버전으로 업데이트하였습니다.\n{sys.argv[1]} -> {sys.argv[2]}")
+        UI()

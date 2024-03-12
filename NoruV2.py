@@ -196,6 +196,7 @@ class SQL():
     tables = ["AUTO_CODE_TBL", "CARMAKER_TBL", "COLORCDGR_TBL", "COLORMIX_TBL", "COLORMIXDETAIL_TBL", "COLORMIXSTD_TBL", "MIXCOLORINFO_TBL"]
     types = {"VARCHAR":str, "LONGCHAR":str, "INTEGER":int, "DECIMAL":float}
     datas = {"code":[], "data":[]}
+    datas_order = {"code":[], "data":[]}
     edit_function = []
     bind_function = None
     useble_widgets = []
@@ -1222,7 +1223,10 @@ class SQL():
         page_now["text"] = "1"
         page_max["text"] = str(math.ceil(len(self.datas["data"]) / view_count)) if len(self.datas["data"]) > 0 else "1"
 
-        for i in range(len(self.datas["code"])):
+        self.datas_order["code"] = [x for x in range(len(self.datas["code"]))]
+        self.datas_order["data"] = [x for x in range(len(self.datas["data"]))]
+
+        for i in self.datas_order["code"]:
             self.Add_result(code_canvas, "r_V2.accdb" if self.datas["code"][i][3] == 0 else "new_auto.mdb", "code", self.datas["code"][i], i, i)
         
         for i in code_canvas.winfo_children():
@@ -1231,7 +1235,7 @@ class SQL():
         code_canvas.update_idletasks()
         code_canvas.configure(scrollregion=code_canvas.bbox("all"))
 
-        for i in range(view_count if len(self.datas["data"]) > view_count else len(self.datas["data"])):
+        for i in range(view_count) if len(self.datas["data"]) > view_count else self.datas_order["data"]:
             self.Add_result(data_canvas, "r_V2.accdb" if self.datas["data"][i][4] == 0 else "new_auto.mdb", "data", self.datas["data"][i], i, i)
         
         for i in data_canvas.winfo_children():

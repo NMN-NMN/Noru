@@ -2966,59 +2966,62 @@ V0.1 (2024.03.03):
         except: return
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        VERSION = ""
-        if os.path.exists(f"{os.getcwd()}\\version.txt"):
-            with open(f"{os.getcwd()}\\version.txt", "r") as file:
-                VERSION = file.read()
-        else:
-            VERSION = "first_run"
-
-        OWNER = "NMN-NMN"
-        REPO = "Noru"
-        API_URL = f"https://api.github.com/repos/{OWNER}/{REPO}"
-        API_KEY = "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"
-
-        result = requests.get(f"{API_URL}/releases/latest", auth=(OWNER, API_KEY))
-        if result.status_code != 200:
-            tkbox.showerror("실패", "깃허브 서버 접속에 실패했습니다.")
-            sys.exit(0)
-
-        result = result.json()
-        NEW_VERSION = result["tag_name"]
-
-        if NEW_VERSION != VERSION:
-            download_url = result["assets"][0]["url"]
-            download = requests.get(download_url, auth=(OWNER, API_KEY), headers={'Accept': 'application/octet-stream'}, stream=True)
-
-            if download.status_code == 200:
-                file_name = f"{os.getcwd()}\\new_NoruV2.exe"
-
-                with open(file_name, "wb") as file:
-                    for chunk in download.iter_content(chunk_size=8192*1024):
-                        file.write(chunk)
+    if (__file__[__file__.rfind(".") + 1:] == "py"):
+        UI()
+    else:
+        if len(sys.argv) < 2:
+            VERSION = ""
+            if os.path.exists(f"{os.getcwd()}\\version.txt"):
+                with open(f"{os.getcwd()}\\version.txt", "r") as file:
+                    VERSION = file.read()
             else:
-                tkbox.showerror("실패", "다운로드에 실패했습니다.")
+                VERSION = "first_run"
+
+            OWNER = "NMN-NMN"
+            REPO = "Noru"
+            API_URL = f"https://api.github.com/repos/{OWNER}/{REPO}"
+            API_KEY = "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"
+
+            result = requests.get(f"{API_URL}/releases/latest", auth=(OWNER, API_KEY))
+            if result.status_code != 200:
+                tkbox.showerror("실패", "깃허브 서버 접속에 실패했습니다.")
                 sys.exit(0)
 
-            with open(f"{os.getcwd()}\\version.txt", "w") as file:
-                file.write(result["tag_name"])
-            
-            with open(f"{os.getcwd()}\\change.bat", "w") as bat:
-                bat.write(
-                    f"""@echo off
-del NoruV2.exe
-ren new_NoruV2.exe NoruV2.exe
-start /d \"{os.getcwd()}\" /b NoruV2.exe {VERSION} {NEW_VERSION}
-del change.bat
-exit
-"""
-                )
+            result = result.json()
+            NEW_VERSION = result["tag_name"]
 
-            subprocess.Popen([f"{os.getcwd()}\\change.bat"])
+            if NEW_VERSION != VERSION:
+                download_url = result["assets"][0]["url"]
+                download = requests.get(download_url, auth=(OWNER, API_KEY), headers={'Accept': 'application/octet-stream'}, stream=True)
+
+                if download.status_code == 200:
+                    file_name = f"{os.getcwd()}\\new_NoruV2.exe"
+
+                    with open(file_name, "wb") as file:
+                        for chunk in download.iter_content(chunk_size=8192*1024):
+                            file.write(chunk)
+                else:
+                    tkbox.showerror("실패", "다운로드에 실패했습니다.")
+                    sys.exit(0)
+
+                with open(f"{os.getcwd()}\\version.txt", "w") as file:
+                    file.write(result["tag_name"])
+                
+                with open(f"{os.getcwd()}\\change.bat", "w") as bat:
+                    bat.write(
+                        f"""@echo off
+    del NoruV2.exe
+    ren new_NoruV2.exe NoruV2.exe
+    start /d \"{os.getcwd()}\" /b NoruV2.exe {VERSION} {NEW_VERSION}
+    del change.bat
+    exit
+    """
+                    )
+
+                subprocess.Popen([f"{os.getcwd()}\\change.bat"])
+            else:
+                UI()
         else:
+            if sys.argv[1] != "first_run":
+                tkbox.showinfo("성공", f"최신 버전으로 업데이트하였습니다.\n{sys.argv[1]} -> {sys.argv[2]}")
             UI()
-    else:
-        if sys.argv[1] != "first_run":
-            tkbox.showinfo("성공", f"최신 버전으로 업데이트하였습니다.\n{sys.argv[1]} -> {sys.argv[2]}")
-        UI()

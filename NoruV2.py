@@ -130,6 +130,10 @@ class Crawling():
             time.sleep(0.5)
             driver.find_element(By.ID, "btnLogin").click()
             time.sleep(0.5)
+
+            if driver.find_element(By.XPATH, "/html/body/div[5]/div").is_displayed():
+                return False
+
             driver.get("https://refinish.co.kr/user/color/colorSearch_view/" + code)
             time.sleep(0.5)
             if isThree:
@@ -153,14 +157,20 @@ class Crawling():
             time.sleep(0.5)
             driver.find_element(By.ID, "loginbtn").click()
 
+            try:
+                driver.switch_to.alert
+                return False
+            except:
+                pass
+
             driver.execute_script('window.open("about:blank", "_blank");')
             driver.switch_to.window(driver.window_handles[1])
 
             driver.get("https://www.autorefinishes.co.kr/member/login.asp")
             time.sleep(0.5)
-            driver.find_element(By.ID, "uid").send_keys("dakaeg3")
+            driver.find_element(By.ID, "uid").send_keys(_ID)
             time.sleep(0.5)
-            driver.find_element(By.ID, "upw").send_keys("123123")
+            driver.find_element(By.ID, "upw").send_keys(_PWD)
             time.sleep(0.5)
             driver.execute_script("arguments[0].click()", driver.find_element(By.XPATH, "//*[@id=\"loginbtn\"]"))
             time.sleep(0.5)
@@ -1815,10 +1825,10 @@ class UI(SQL):
             inner_frame.children["entry0"]["state"] = "readonly"
         
         #   크롤링 부분
-        inner_frame = tk.LabelFrame(two_frame, text="크롤링 [상태:     ]", labelanchor="n", width=200, height=228)
+        inner_frame = tk.LabelFrame(two_frame, text="크롤링 [상태:       ]", labelanchor="n", width=200, height=228)
         inner_frame.grid(row=0, column=1, rowspan=4, padx=(10, 0), sticky="w")
 
-        noru_frame = tk.Frame(inner_frame, bd=1, relief="solid", width=190, height=60)
+        noru_frame = tk.Frame(inner_frame, width=190, height=60)
         noru_frame.place(relx=0.5, rely=0.3, anchor="center")
         tk.Label(noru_frame, text="3B", width=5).place(relx=0.05, rely=0.35, anchor="w")
         entry_3b = tk.Entry(noru_frame, name="3b", width=15, takefocus=False)
@@ -1827,26 +1837,25 @@ class UI(SQL):
         entry_3p = tk.Entry(noru_frame, name="3p", width=15, takefocus=False)
         entry_3p.place(relx=0.3, rely=0.7, anchor="w")
 
-        noru_frame2 = tk.Frame(inner_frame, bd=1, relief="solid", width=190, height=60)
+        noru_frame2 = tk.Frame(inner_frame, width=190, height=60)
         noru_frame2.place(relx=0.5, rely=0.3, anchor="center")
         tk.Label(noru_frame2, text="검색어", width=5).place(relx=0.05, rely=0.5, anchor="w")
         entry_noru = tk.Entry(noru_frame2, name="entry", width=15, takefocus=False)
         entry_noru.place(relx=0.3, rely=0.5, anchor="w")
 
-        kcc_frame = tk.Frame(inner_frame, bd=1, relief="solid", width=190, height=60)
+        kcc_frame = tk.Frame(inner_frame, width=190, height=60)
         tk.Label(kcc_frame, text="검색어", width=5).place(relx=0.05, rely=0.5, anchor="w")
         entry_kcc = tk.Entry(kcc_frame, name="entry", width=15, takefocus=False)
         entry_kcc.place(relx=0.3, rely=0.5, anchor="w")
 
-        login_frame = tk.Frame(inner_frame, bd=1, relief="solid", width=190, height=60)
+        login_frame = tk.Frame(inner_frame, width=190, height=60)
         login_frame.place(relx=0.5, rely=0.6, anchor="center")
         tk.Label(login_frame, text="아이디: ").place(relx=0.13, rely=0.35, anchor="w")
-        id_entry = tk.Entry(login_frame, width=10).place(relx=0.46, rely=0.3, anchor="w")
+        id_entry = tk.Entry(login_frame, width=10)
+        id_entry.place(relx=0.46, rely=0.3, anchor="w")
         tk.Label(login_frame, text="비밀번호: ").place(relx=0.13, rely=0.65, anchor="w")
-        pwd_entry = tk.Entry(login_frame, width=10).place(relx=0.46, rely=0.7, anchor="w")
-
-        # status_label = tk.Label(inner_frame, text="상태: ")
-        # status_label.place(relx=0.325, rely=0.875, anchor="w")
+        pwd_entry = tk.Entry(login_frame, width=10)
+        pwd_entry.place(relx=0.46, rely=0.7, anchor="w")
 
         def crawling_entry_switch():
             if company.get() == 0:
@@ -1877,7 +1886,7 @@ class UI(SQL):
             self.window.update_idletasks()
 
             try:
-                _ID = id_entry().get()
+                _ID = id_entry.get()
                 _PWD = pwd_entry.get()
 
                 if _ID == "" or _PWD == "":
@@ -1885,14 +1894,20 @@ class UI(SQL):
                     tkbox.showerror("실패", "아이디 혹은 패스워드를 확인하십시오.")
                     alert_frame.destroy()
                     return
+                
                 result = Crawling().open(_ID, _PWD, ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get()), True)
             except:
                 inner_frame["text"] = "크롤링 [상태: 실패]"
                 tkbox.showerror("실패", "데이터를 가져오지 못했습니다.")
-                # status_label.config(text="상태: 실패.", fg="#A63641")
                 alert_frame.destroy()
                 return
             
+            if result == False:
+                inner_frame["text"] = "크롤링 [상태: 실패]"
+                tkbox.showerror("실패", "아이디 혹은 패스워드를 확인하십시오.")
+                alert_frame.destroy()
+                return
+
             data = result[0]
             detail_data_3B = result[1]
             detail_data_3P = result[2]
@@ -1943,11 +1958,10 @@ class UI(SQL):
             stop_filter.set(False)
 
             inner_frame["text"] = "크롤링 [상태: 성공]"
-            # status_label.config(text="상태: 성공.", fg="#009630")
             alert_frame.destroy()
 
         tk.Button(inner_frame, text="가져오기", takefocus=False, command=get_site_data, width=10).place(relx=0.25, rely=0.85, anchor="center")
-        tk.Button(inner_frame, text="열기", takefocus=False, command=lambda: Crawling().open(([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get())), width=10).place(relx=0.75, rely=0.85, anchor="center")
+        tk.Button(inner_frame, text="열기", takefocus=False, command=lambda: Crawling().open(id_entry.get(), pwd_entry.get(), ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get())), width=10).place(relx=0.75, rely=0.85, anchor="center")
 
         def show_normal_cott():
             if isnormal.get() == 0:

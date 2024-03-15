@@ -2454,7 +2454,7 @@ class UI(SQL):
             data_sort = [False, False, False, False, False, False]
 
             one_frame = tk.Frame(record_frame)
-            one_frame.place(x=0, y=0, width=1000, height=440)
+            one_frame.place(x=0, y=0, width=1000, height=470)
 
             preview_frame = tk.Frame(one_frame, name="preview")
             preview_frame.place(x=10, y=30, width=980, height=260, anchor="nw")
@@ -2468,15 +2468,13 @@ class UI(SQL):
             loading_bar.place(x=10, y=360, width=980, height=15, anchor="nw")
 
             menu_frame = tk.Frame(one_frame, bd=1, relief="sunken")
-            menu_frame.place(x=10, y=390, width=980, height=40, anchor="nw")
+            menu_frame.place(x=10, y=390, width=980, height=70, anchor="nw")
             
             menu_one = tk.Frame(menu_frame)
-            menu_one.place(relx=0.5, rely=0.5, width=978, height=38, anchor="center")
-
-            menu_two = tk.Frame(menu_frame)
+            menu_one.place(relx=0.5, rely=0.5, width=978, height=68, anchor="center")
 
             except_frame = tk.LabelFrame(record_frame, text="예외 처리")
-            except_frame.place(x=10, y=450, width=980, height=510, anchor="nw")
+            except_frame.place(x=10, y=480, width=980, height=510, anchor="nw")
 
             page_frame = tk.Frame(one_frame, bd=1, relief="sunken")
             page_frame.place(x=470, y=295, width=520, height=25)
@@ -2681,15 +2679,12 @@ class UI(SQL):
                 self.useble_widgets.append(i)
 
             # Options Frame
-            self.search_options["database"] = [tk.IntVar(value=1), tk.IntVar(value=0)]
-            tk.Checkbutton(menu_two, text="r_V2.accdb", variable=self.search_options["database"][0]).place(x=20, rely=0.5, anchor="w")
-            tk.Checkbutton(menu_two, text="new_auto.mdb", variable=self.search_options["database"][1]).place(x=130, rely=0.5, anchor="w")
+            self.search_options["database"] = [tk.IntVar(value=1), tk.IntVar(value=1)]
+            tk.Checkbutton(menu_one, text="r_V2.accdb", variable=self.search_options["database"][0]).place(x=10, rely=0.75, anchor="w")
+            tk.Checkbutton(menu_one, text="new_auto.mdb", variable=self.search_options["database"][1]).place(x=110, rely=0.75, anchor="w")
 
             self.search_options["including_text"] = tk.IntVar(value=0)
-            tk.Label(menu_two, text="검색시 입력한 단어 무조건 포함 (AND): ").place(x=250, rely=0.5, anchor="w")
-            tk.Checkbutton(menu_two, variable=self.search_options["including_text"]).place(x=470, rely=0.5, anchor="w")
-
-            tk.Button(menu_two, text="뒤로가기", takefocus=False, command=lambda: switch_menu_frame(menu_one, menu_two)).place(relx=0.925, rely=0.5, anchor="w")
+            tk.Checkbutton(menu_one, text="검색시 입력한 단어 무조건 포함 (AND)", variable=self.search_options["including_text"]).place(x=230, rely=0.75, anchor="w")
 
             # except
             def checkbutton_select(type, all):
@@ -2815,17 +2810,13 @@ class UI(SQL):
 
                     self.useble_widgets.append(check)
 
-            def switch_menu_frame(frame1, frame2):
-                frame1.place(relx=0.5, rely=0.5, width=978, height=38, anchor="center")
-                frame2.place_forget()
-
             def switch_except_frame():
-                if self.window.winfo_height() == 440:
-                    record_frame.place(x=0, y=0, width=1000, height=970)
-                    self.window.geometry("1000x970")
+                if self.window.winfo_height() == 470:
+                    record_frame.place(x=0, y=0, width=1000, height=1000)
+                    self.window.geometry("1000x1000")
                 else:
-                    record_frame.place(x=0, y=0, width=1000, height=440)
-                    self.window.geometry("1000x440")
+                    record_frame.place(x=0, y=0, width=1000, height=470)
+                    self.window.geometry("1000x470")
 
             def ready_for_search():
                 # Lock button, entry
@@ -2910,14 +2901,13 @@ class UI(SQL):
 
                 Thread(target=self.Search_V2, daemon=True, args=(select_databases, keywords, bool(self.search_options["including_text"].get()), self.search_options["except_tables"], self.search_options["except_columns"], self.search_options["except_texts"])).start()
 
-            tk.Label(menu_one, text="통합검색").place(relx=0.01, rely=0.5, anchor="w")
-            tk.Entry(menu_one, name="search_entry", bd=2, takefocus=False).place(relx=0.07, rely=0.5, width=300, height=25, anchor="w")
-            tk.Button(menu_one, text="검색하기", takefocus=False, command=lambda: ready_for_search()).place(relx=0.38, rely=0.5, anchor="w")
-            tk.Button(menu_one, text="검색 옵션", takefocus=False, command=lambda: switch_menu_frame(menu_two, menu_one)).place(relx=0.5, rely=0.5, anchor="w")
-            tk.Button(menu_one, text="검색 예외", takefocus=False, command=switch_except_frame).place(relx=0.58, rely=0.5, anchor="w")
-            tk.Button(menu_one, text="삭제하기", command=self.Delete, takefocus=False).place(relx=0.74, rely=0.5, anchor="w")
-            tk.Button(menu_one, text="휴지통", command=self.Trash, takefocus=False).place(relx=0.82, rely=0.5, anchor="w")
-            tk.Button(menu_one, text="뒤로가기", takefocus=False, command=lambda: self.change_frames(main_frame, record_frame, 400, 400)).place(relx=0.925, rely=0.5, anchor="w")
+            tk.Label(menu_one, text="통합검색").place(relx=0.01, rely=0.3, anchor="w")
+            tk.Entry(menu_one, name="search_entry", bd=2, takefocus=False).place(relx=0.07, rely=0.3, width=300, height=25, anchor="w")
+            tk.Button(menu_one, text="검색하기", takefocus=False, command=lambda: ready_for_search()).place(relx=0.38, rely=0.3, anchor="w")
+            tk.Button(menu_one, text="검색 예외", takefocus=False, command=switch_except_frame).place(relx=0.58, rely=0.3, anchor="w")
+            tk.Button(menu_one, text="삭제하기", command=self.Delete, takefocus=False).place(relx=0.74, rely=0.3, anchor="w")
+            tk.Button(menu_one, text="휴지통", command=self.Trash, takefocus=False).place(relx=0.82, rely=0.3, anchor="w")
+            tk.Button(menu_one, text="뒤로가기", takefocus=False, command=lambda: self.change_frames(main_frame, record_frame, 400, 400)).place(relx=0.925, rely=0.3, anchor="w")
 
             menu_one.children["search_entry"].bind("<Return>", lambda e: ready_for_search())
 
@@ -2968,7 +2958,7 @@ V0.1 (2024.03.03):
 
         tk.Button(main_frame, text="코드 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(code_frame, main_frame, 750, 380)).place(relx=0.5, rely=0.25, anchor="center")
         tk.Button(main_frame, text="데이터 입력", font=main_font, bd=3, width=12, command=lambda: self.change_frames(data_frame, main_frame, 950, 940)).place(relx=0.5, rely=0.5, anchor="center")
-        tk.Button(main_frame, text="기록 조회", font=main_font, bd=3, width=12, command=lambda: self.change_frames(record_frame, main_frame, 1000, 440)).place(relx=0.5, rely=0.75, anchor="center")
+        tk.Button(main_frame, text="기록 조회", font=main_font, bd=3, width=12, command=lambda: self.change_frames(record_frame, main_frame, 1000, 470)).place(relx=0.5, rely=0.75, anchor="center")
         tk.Button(main_frame, font=("TkDefaultFont", 10), text="패치 내역", command=lambda: self.change_frames(patch_frame, main_frame, 400, 400)).place(relx=0.875, rely=0.9, anchor="n")
 
         main_frame.place(x=0, y=0, width=400, height=400)

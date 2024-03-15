@@ -1308,32 +1308,40 @@ class SQL():
         canvas.delete("result")
 
         self.Open("r_V2.accdb", "")
-        cursor = self.cursors[0]
+        self.Open("new_auto.mdb", "EOGKSALSRNRSHFNVPDLS")
         
-        cursor.execute(f"SELECT [MixCd] FROM MIXCOLORINFO_TBL WHERE [ColorCode] = \'{keyword}\'")
-        for idx, i in enumerate(cursor.fetchall()):
-            cursor.execute(f"SELECT [StdDesc] FROM COLORMIXSTD_TBL WHERE [MixCd] = \'{i[0]}\'")
-            data = cursor.fetchone()
-            if len(data) > 0:
-                frame = tk.Frame(canvas, bd=1, relief="raised", width=258, height=25)
-                
-                one = tk.Label(frame, text=keyword)
-                one.place(x=5, rely=0.5, width=80, anchor="w")
-                two = tk.Label(frame, text=i[0])
-                two.place(x=95, rely=0.5, width=77, anchor="w")
-                three = tk.Label(frame, text=data[0])
-                three.place(x=182, rely=0.5, width=70, anchor="w")
+        for cursor_index in range(2):
+            cursor = self.cursors[cursor_index]
+            
+            condition = f"\'%{keyword}%\'" if keyword.find("-") == -1 else f"\'{keyword}%\'"
+            cursor.execute(f"SELECT [MixCd], [ColorCode] FROM MIXCOLORINFO_TBL WHERE [ColorCode] LIKE {condition}")
+            for i in cursor.fetchall():
+                cursor.execute(f"SELECT [StdDesc] FROM COLORMIXSTD_TBL WHERE [MixCd] = \'{i[0]}\'")
+                data = cursor.fetchone()
+                if data != None and len(data) > 0:
+                    frame = tk.Frame(canvas, bd=1, relief="raised", width=258, height=25)
+                    
+                    one_text = i[1].strip() if i[1] != None else i[1]
+                    two_text = i[0].strip() if i[0] != None else i[0]
+                    three_text = data[0].strip() if data[0] != None else data[0]
 
-                Hovertip(one, keyword, hover_delay=0)
-                Hovertip(two, i[0], hover_delay=0)
-                Hovertip(three, data[0], hover_delay=0)
+                    one = tk.Label(frame, text=one_text)
+                    one.place(x=5, rely=0.5, width=80, anchor="w")
+                    two = tk.Label(frame, text=two_text)
+                    two.place(x=95, rely=0.5, width=77, anchor="w")
+                    three = tk.Label(frame, text=three_text)
+                    three.place(x=182, rely=0.5, width=70, anchor="w")
 
-                canvas.create_window(0, 25 * idx, anchor="nw", window=frame, tags="result")
+                    Hovertip(one, one_text, hover_delay=0)
+                    Hovertip(two, two_text, hover_delay=0)
+                    Hovertip(three, three_text, hover_delay=0)
 
-        canvas.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
+                    canvas.create_window(0, 25 * (len(canvas.winfo_children()) - 1), anchor="nw", window=frame, tags="result")
 
-        self.Close(0)
+            canvas.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+            self.Close(cursor_index)
 
 class Calculation():
     weight = {
@@ -1585,8 +1593,8 @@ class UI(SQL):
         stop_filter = tk.BooleanVar(value=False)
         colormixstd_match = {
             "차량판넬":"000", "마스터판넬":"001", "라인판넬":"002", "실차":"003", 
-            "글로벌 칼라북 (B)":"004", "글로벌 칼라북(I)":"005", "글로벌 칼라북(K)":"006", "글로벌 칼라북(S)":"007", 
-            "기타":"008", "현지 제작 판넬":"009", "글로벌 칼라북 (SD)":"010", "현장배합":"011", 
+            "글로벌칼라북(B)":"004", "글로벌칼라북(I)":"005", "글로벌칼라북(K)":"006", "글로벌칼라북(S)":"007", 
+            "기타":"008", "현지제작판넬":"009", "글로벌칼라북(SD)":"010", "현장배합":"011", 
             "현장시편":"012"
         }
 
@@ -1851,10 +1859,10 @@ class UI(SQL):
         login_frame = tk.Frame(inner_frame, width=190, height=60)
         login_frame.place(relx=0.5, rely=0.6, anchor="center")
         tk.Label(login_frame, text="아이디: ").place(relx=0.13, rely=0.35, anchor="w")
-        id_entry = tk.Entry(login_frame, width=10)
+        id_entry = tk.Entry(login_frame, takefocus=False, width=10)
         id_entry.place(relx=0.46, rely=0.3, anchor="w")
         tk.Label(login_frame, text="비밀번호: ").place(relx=0.13, rely=0.65, anchor="w")
-        pwd_entry = tk.Entry(login_frame, width=10)
+        pwd_entry = tk.Entry(login_frame, takefocus=False, width=10)
         pwd_entry.place(relx=0.46, rely=0.7, anchor="w")
 
         def crawling_entry_switch():
@@ -1942,7 +1950,7 @@ class UI(SQL):
                     #MixCdGr
                     get_code(one_frame.children["frame" + str(i)].children["entry2"], data["MixCd(3B)"] if i == 0 else data["MixCd(3P)"])
                     #ColorMixStd
-                    three_frame.children["frame" + str(i)].children["combobox2"].set(colormixstd_match[data["ColorMixStd"]])
+                    three_frame.children["frame" + str(i)].children["combobox2"].set(colormixstd_match[data["ColorMixStd"].replace(" ", "")])
 
                 for p in range(len(detail_data_3B if i == 0 else detail_data_3P)):
                     add(two_frame.children["outer" + str(i)])
@@ -2368,11 +2376,12 @@ class UI(SQL):
         def color_toplevel():
             window = tk.Toplevel(self.window)
             window.geometry("300x390")
+            window.resizable(False, False)
             window.title("내역 검색")
             
             tk.Label(window, text="내역 검색 결과").place(relx=0.5, y=10, anchor="n")
 
-            frame = tk.Frame(window, bd=1, relief="sunken")
+            frame = tk.Frame(window, name="outer0", bd=1, relief="sunken")
             frame.place(relx=0.5, y=40, width=280, height=300, anchor="n")
 
             label_frame = tk.Frame(frame, bd=1, relief="raised")
@@ -2395,6 +2404,7 @@ class UI(SQL):
             tk.Button(window, text="검색하기", command=lambda: self.search_for_color(window.children["entry"].get(), canvas)).place(x=200, y=350)
 
             window.children["entry"].bind("<Return>", lambda e: self.search_for_color(window.children["entry"].get(), canvas))
+            window.bind("<MouseWheel>", lambda e: self.scroll_bind(e.widget, e.delta))
 
             window.mainloop()
 
@@ -2924,7 +2934,10 @@ class UI(SQL):
             scrollbar.configure(command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
 
-            context = """V0.31 (2024.03.09):
+            context = """V0.4(2024.03.15):
+        + 수정사항 해결됐음.
+
+V0.31 (2024.03.09):
         + 문제가 있던 업데이트 런처를 없애고
         단일 실행 파일로 합쳐졌음.
         
@@ -2988,7 +3001,11 @@ V0.1 (2024.03.03):
         except: return
 
 if __name__ == "__main__":
-    if (__file__[__file__.rfind(".") + 1:] == "py"):
+    IS_SOURCES = False
+
+    if IS_SOURCES:
+        # with open("test.txt", "w") as file:
+        #     file.write(sys._getframe().f_code.co_filename)
         UI()
     else:
         if len(sys.argv) < 2:
@@ -3004,7 +3021,7 @@ if __name__ == "__main__":
             API_URL = f"https://api.github.com/repos/{OWNER}/{REPO}"
             API_KEY = "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"
 
-            result = requests.get(f"{API_URL}/releases/latest", auth=(OWNER, API_KEY))
+            result = requests.get(f"{API_URL}/releases/latest")
             if result.status_code != 200:
                 tkbox.showerror("실패", "깃허브 서버 접속에 실패했습니다.")
                 sys.exit(0)
@@ -3014,7 +3031,7 @@ if __name__ == "__main__":
 
             if NEW_VERSION != VERSION:
                 download_url = result["assets"][0]["url"]
-                download = requests.get(download_url, auth=(OWNER, API_KEY), headers={'Accept': 'application/octet-stream'}, stream=True)
+                download = requests.get(download_url, headers={'Accept': 'application/octet-stream'}, stream=True)
 
                 if download.status_code == 200:
                     file_name = f"{os.getcwd()}\\new_NoruV2.exe"

@@ -3,6 +3,7 @@ import re
 import sys
 import math
 import time
+import shutil
 import subprocess
 import requests
 import tkinter as tk
@@ -2937,9 +2938,10 @@ class UI(SQL):
             scrollbar.configure(command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
 
-            context = """V0.4(2024.04.11)
+            context = """V0.41(2024.04.11)
         + 데이터 가져올 시 ColorMixStd 매치가 되지않아
         발생한 프리징 현상을 해결함.
+        + 업데이트 코드를 좀 더 좋게 변경함.
 
 V0.4(2024.03.15):
         + 수정사항 해결됐음.
@@ -3011,8 +3013,6 @@ if __name__ == "__main__":
     IS_SOURCES = False
 
     if IS_SOURCES:
-        # with open("test.txt", "w") as file:
-        #     file.write(sys._getframe().f_code.co_filename)
         UI()
     else:
         if len(sys.argv) < 2:
@@ -3037,37 +3037,29 @@ if __name__ == "__main__":
             NEW_VERSION = result["tag_name"]
 
             if NEW_VERSION != VERSION:
-                download_url = result["assets"][0]["url"]
-                download = requests.get(download_url, headers={'Accept': 'application/octet-stream'}, stream=True)
-
-                if download.status_code == 200:
-                    file_name = f"{os.getcwd()}\\new_NoruV2.exe"
-
-                    with open(file_name, "wb") as file:
-                        for chunk in download.iter_content(chunk_size=8192*1024):
-                            file.write(chunk)
-                else:
-                    tkbox.showerror("실패", "다운로드에 실패했습니다.")
-                    sys.exit(0)
+                shutil.copyfile("NoruV2.exe", "Updater.exe")
 
                 with open(f"{os.getcwd()}\\version.txt", "w") as file:
                     file.write(result["tag_name"])
-                
-                with open(f"{os.getcwd()}\\change.bat", "w") as bat:
-                    bat.write(
-                        f"""@echo off
-    del NoruV2.exe
-    ren new_NoruV2.exe NoruV2.exe
-    start /d \"{os.getcwd()}\" /b NoruV2.exe {VERSION} {NEW_VERSION}
-    del change.bat
-    exit
-    """
-                    )
 
-                subprocess.Popen([f"{os.getcwd()}\\change.bat"])
+                download_url = result["assets"][0]["url"]
+                subprocess.Popen([f"{os.getcwd()}\\Updater.exe", "update", f"{download_url}"])
             else:
                 UI()
-        else:
-            if sys.argv[1] != "first_run":
-                tkbox.showinfo("성공", f"최신 버전으로 업데이트하였습니다.\n{sys.argv[1]} -> {sys.argv[2]}")
+        elif sys.argv[1] == "update":
+            download = requests.get(sys.argv[2], headers={'Accept': 'application/octet-stream'}, stream=True)
+
+            if download.status_code == 200:
+                file_name = f"{os.getcwd()}\\NoruV2.exe"
+
+                with open(file_name, "wb") as file:
+                    for chunk in download.iter_content(chunk_size=8192*1024):
+                        file.write(chunk)
+            else:
+                tkbox.showerror("실패", "다운로드에 실패했습니다.")
+                sys.exit(0)
+            
+            subprocess.Popen([f"{os.getcwd()}\\NoruV2.exe", "finished"])
+        elif sys.argv[1] == "finished":
+            os.remove(f"{os.getcwd()}\\Updater.exe")
             UI()

@@ -1950,7 +1950,10 @@ class UI(SQL):
                     #MixCdGr
                     get_code(one_frame.children["frame" + str(i)].children["entry2"], data["MixCd(3B)"] if i == 0 else data["MixCd(3P)"])
                     #ColorMixStd
-                    three_frame.children["frame" + str(i)].children["combobox2"].set(colormixstd_match[data["ColorMixStd"].replace(" ", "")])
+                    try:
+                        three_frame.children["frame" + str(i)].children["combobox2"].set(colormixstd_match[data["ColorMixStd"].replace(" ", "")])
+                    except:
+                        tkbox.showerror("경고", "ColorMixStd에 해당하는 코드가 없습니다.\nColorMixStd 값을 꼭 수정해주세요.")
 
                 for p in range(len(detail_data_3B if i == 0 else detail_data_3P)):
                     add(two_frame.children["outer" + str(i)])

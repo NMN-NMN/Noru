@@ -105,9 +105,9 @@ class Crawling():
                             driver.find_element(By.XPATH, "//*[@id=\"mixlastForm\"]/div/div[3]/div[2]/table/tbody/tr[" + str(index) + "]/td[3]/input[3]").get_attribute("value")
                     ))
         
-        return data, detail_data_3B, detail_data_3P
+        return data, detail_data_3B, detail_data_3P, isThree
     
-    def open(self, _ID, _PWD, code, mode, isThree, isGet = False):
+    def open(self, _ID, _PWD, code, mode, isThree, paintTy, isGet = False):
         options = webdriver.ChromeOptions()
         if isGet:
             options.add_argument("--headless")
@@ -191,13 +191,41 @@ class Crawling():
                 driver.execute_script('window.open("about:blank", "_blank");')
 
             tabs = driver.window_handles
+            cott3 = ""
 
             for i in range(len(code)):
                 driver.switch_to.window(tabs[0 if i == 0 else 2])
-                driver.get("https://m.autorefinishes.co.kr/colorinformation/colormix_view.asp?MixCd=" + code[i] + "&PaintTy=bc")
+                driver.get("https://m.autorefinishes.co.kr/colorinformation/colormix_view.asp?MixCd=" + code[i] + "&PaintTy=" + paintTy)
                 
                 driver.switch_to.window(tabs[1 if i == 0 else 3])
-                driver.get("https://www.autorefinishes.co.kr/colorinformation/colormix_user.asp?mixcd=" + code[i] + "&ptype=bc&Op=A")
+                driver.get("https://www.autorefinishes.co.kr/colorinformation/colormix_user.asp?mixcd=" + code[i] + "&ptype=" + paintTy.lower() + "&Op=A")
+
+                if not isThree and isGet:
+                    try:
+                        driver.switch_to.window(tabs[0])
+                        cott3 = driver.find_element(By.XPATH, "//*[@id=\"mixlastForm\"]/div/div[4]/div[2]/div/p").text
+                        isok = tkbox.askquestion("알람", "3코트 데이터입니다.\n이동하시겠습니까?")
+                        if isok == "yes":
+                            driver.execute_script('window.open("about:blank", "_blank");')
+                            driver.execute_script('window.open("about:blank", "_blank");')
+                            tabs = driver.window_handles
+
+                            if cott3[16] == "B":
+                                pearl = code[0][:]
+                                code[0] = cott3[22:-1]
+                                code.append(pearl)
+                            else:
+                                code.append(cott3.split("(")[1][:-1])
+
+                            for p in range(len(code)):
+                                driver.switch_to.window(tabs[0 if p == 0 else 2])
+                                driver.get("https://m.autorefinishes.co.kr/colorinformation/colormix_view.asp?MixCd=" + code[p] + "&PaintTy=" + paintTy)
+                                
+                                driver.switch_to.window(tabs[1 if p == 0 else 3])
+                                driver.get("https://www.autorefinishes.co.kr/colorinformation/colormix_user.asp?mixcd=" + code[p] + "&ptype=" + paintTy.lower() + "&Op=A")
+                            isThree = True
+                    except:
+                        break
 
         if isGet:
             return self.get(driver, mode, isThree)
@@ -1343,34 +1371,23 @@ class SQL():
             canvas.configure(scrollregion=canvas.bbox("all"))
 
             self.Close(cursor_index)
+    
+    def get_TONERGRV_TBL(self):
+        toners = {}
+        
+        self.Open("new_auto.mdb", "EOGKSALSRNRSHFNVPDLS")
+        self.cursors[1].execute("SELECT [tonerCd], [gravity] FROM TONERGRV_TBL")
+        for toner in self.cursors[1].fetchall():
+            toners[toner[0].strip()] = float(toner[1])
+        self.Close(1)
+
+        return toners
 
 class Calculation():
-    weight = {
-            "KB10N" : 0.9800, "KB10U" : 1.0000, "KB10" : 0.9600, "KM100" : 1.9630, "KM101" : 1.0000, "KM102" : 1.2900, "KM200" : 1.0100, "KM201" : 1.0200, "KM202" : 0.9640, "KM203" : 0.9600,
-            "KM204" : 1.0200, "KM205" : 0.9500, "KM206" : 0.9600, "KM300" : 1.0300, "KM301" : 0.9600, "KM302" : 1.0900, "KM400" : 0.9530, "KM401" : 1.0000, "KM403" : 0.9600, "KM404" : 1.0000,
-            "KM405" : 1.7100, "KM406" : 1.0400, "KM407" : 1.1140, "KM408" : 1.1000, "KM409" : 2.0000, "KM410" : 1.0700, "KM412" : 1.7100, "KM502" : 1.0190, "KM600" : 0.9620, "KM601" : 1.0300,
-            "KM602" : 1.0000, "KM603" : 1.0000, "KM604" : 0.9900, "KM605" : 1.0100, "KM606" : 1.9100, "KM607" : 1.0400, "KM608" : 1.0300, "KM609" : 1.0900, "KM610" : 0.9800, "KM611" : 1.9500,
-            "KM612" : 1.0000, "KM613" : 1.0100, "KM614" : 0.9800, "KM615" : 0.9600, "KM616" : 0.9600, "KM700" : 1.0030, "KM701" : 1.0030, "KM702" : 1.0010, "KM800" : 0.9900, "KM801" : 0.9700,
-            "KM802" : 0.9960, "KM803" : 0.9930, "KM804" : 1.0100, "KM805" : 1.0000, "KM806" : 1.0070, "KM807" : 0.9950, "KM808" : 1.0080, "KM809" : 0.9860, "KM810" : 1.0100, "KM814" : 1.0100,
-            "KM816" : 1.0100, "KM900" : 1.0400, "KM901" : 1.0300, "KM902" : 1.0300, "KM903" : 1.0430, "KM904" : 1.0630, "KM905" : 1.0390, "KM906" : 1.0300, "KM907" : 1.0300, "KM908" : 1.0270,
-            "KM909" : 1.0310, "KM910" : 1.0730, "KM911" : 1.0400, "KM913" : 1.0540, "KM914" : 1.0370, "KM915" : 1.0500, "KM916" : 1.0750, "KM917" : 1.0500, "KM918" : 1.0370, "KM919" : 1.0100,
-            "KM920" : 1.0400, "KM921" : 1.0430, "KM922" : 1.0430, "KM923" : 1.0400, "KM924" : 1.0400, "KM925" : 1.0600, "KM926" : 1.0400, "KM927" : 1.0400, "KM928" : 1.0300, "KM929" : 1.0400,
-            "KA69F" : 0.9300,
-            "BC-1000" : 0.9332, "BC-7000" : 1.1824, "BC-8050" : 0.9624, "HI-013" : 1.1498, "HI-015" : 1.1495, "HI-016" : 1.1428, "HI-017" : 1.1526, "HI-018" : 1.1607, "HI-019" : 0.9954,
-            "HI-022" : 1.0361, "HI-027" : 1.1607, "HI-033" : 1.1337, "HI-035" : 1.0361, "HI-036" : 1.1372, "HI-037" : 1.1269, "HI-039" : 1.1551, "HI-041" : 1.1427, "HI-042" : 1.1473, "HI-045" : 1.1461,
-            "HI-047" : 1.1439, "HI-049" : 1.0215, "HI-051" : 1.1224, "HI-053" : 1.1370, "HI-055" : 1.1530, "HI-056" : 1.1341, "HI-057" : 1.1503, "HI-059" : 0.9954, "HI-061" : 1.1473, "HI-065" : 1.1341,
-            "HI-071" : 1.1337, "HI-072" : 1.0400, "HI-073" : 1.1590, "HI-075" : 1.1341, "HI-076" : 1.1124, "HI-0170" : 1.1627, "HI-0230" : 1.0930, "HI-0480" : 0.9831, "HI-0620" : 1.0055, "HI-0770" : 1.1172,
-            "HI-135" : 1.0280, "HI-145" : 1.0075, "HI-150" : 1.0489, "HI-151" : 0.9849, "HI-155" : 1.0038, "HI-160" : 1.0561, "HI-161" : 1.0262, "HI-163" : 1.0226, "HI-165" : 1.0702, "HI-167" : 1.0613,
-            "HI-175" : 1.0543, "HI-176" : 1.0056, "HI-179" : 1.0068, "HI-181" : 0.9786, "HI-182" : 1.0084, "HI-185" : 1.4821, "HI-195" : 1.1410, "HI-235" : 1.0477, "HI-245" : 1.5692, "HI-246" : 1.0280,
-            "HI-335" : 1.0435, "HI-336" : 1.0441, "HI-345" : 1.0034, "HI-355" : 1.3498, "HI-365" : 1.1338, "HI-375" : 1.3912, "HI-376" : 1.4008, "HI-377" : 1.4594, "HI-385" : 1.5732, "HI-386" : 1.5710,
-            "HI-387" : 1.0633, "HI-395" : 1.0667, "HI-396" : 1.5968, "HI-398" : 0.9848, "HI-435" : 1.0545, "HI-445" : 1.1471, "HI-525" : 1.0236, "HI-535" : 1.0089, "HI-540" : 1.0156, "HI-543" : 1.0145,
-            "HI-545" : 0.9800, "HI-546" : 0.9820, "HI-550" : 1.0046, "HI-555" : 1.0041, "HI-575" : 1.0221, "HI-580" : 1.0024, "HI-583" : 1.2677, "HI-635" : 1.0001, "HI-645" : 1.0097, "HI-735" : 1.2467,
-            "HI-745" : 1.0823, "HI-755" : 1.0137, "HI-770" : 1.8144, "HI-805" : 0.9658, "HI-810" : 1.0400, "HI-815" : 0.9991, "HI-820" : 0.9686, "HI-835" : 1.0114, "HI-855" : 1.1276, "HI-925" : 0.9972,
-            "HI-935" : 1.0361, "HI-939" : 1.0272, "HI-940" : 1.0312, "HI-941" : 1.0392, "HI-942" : 1.0447, "HI-945" : 0.9492, "HI-971" : 1.0451, "HI-975" : 1.0281, "HI-977" : 1.0550, "HI-979" : 1.0286,
-            "HI-985" : 1.0391, "HI-987" : 1.0585, "HI-988" : 1.0610, "HI-989" : 1.0301, "HI-995" : 1.0708
-        }
+    def calculation_setting(self):
+        self.weight = self.get_TONERGRV_TBL()
     
-    def get(self, main_index, mix_rates, color_codes):
+    def get_toner(self, main_index, mix_rates, color_codes):
         try:
             one = [r / c for r, c in zip(mix_rates, (self.weight[i] for i in color_codes))]
             two = [i / sum(one) for i in (500, 800, 900, 2000, 3600)]
@@ -1379,7 +1396,7 @@ class Calculation():
         except:
             return False
 
-class UI(SQL):
+class UI(SQL, Calculation):
     search_options = {"database":None, "including_text":None, "except_tables":None, "except_columns":None, "except_texts":None}
 
     def __init__(self):
@@ -1396,6 +1413,7 @@ class UI(SQL):
         self.window.resizable(False, False)
 
         self.setting()
+        self.calculation_setting()
         self.window.attributes("-topmost", True)
         self.window.attributes("-topmost", False)
         self.window.mainloop()
@@ -1591,6 +1609,7 @@ class UI(SQL):
         isnormal = tk.IntVar()
         company = tk.IntVar()
         isshow = tk.IntVar(value=0)
+        stop_spec = [tk.BooleanVar(value=False), tk.BooleanVar(value=False)]
         stop_filter = tk.BooleanVar(value=False)
         colormixstd_match = {
             "차량판넬":"000", "마스터판넬":"001", "라인판넬":"002", "실차":"003", 
@@ -1619,7 +1638,7 @@ class UI(SQL):
             if stop_filter.get() == True: return True
 
             text = text.upper()
-            if re.search("[^A-Z0-9-]", text) != None:
+            if re.search("[^A-Z0-9-()]", text) != None:
                 return False
 
             widget = self.window.nametowidget(widget)
@@ -1673,10 +1692,16 @@ class UI(SQL):
             if not isUpdate:
                 detail = self.window.nametowidget(widget).master.master
 
+            if stop_spec[int(detail.master.master.winfo_name()[-1])].get() == True:
+                return
+
             def fail():
                 for i in detail.winfo_children():
                     for id in range(5):
-                        i.children[str(id)]["text"] = "-"
+                        i.children[str(id)]["state"] = "normal"
+                        i.children[str(id)].delete(0, "end")
+                        i.children[str(id)].insert(0, "-")
+                        i.children[str(id)]["state"] = "readonly"
             
             mix_rates = []
             color_codes = []
@@ -1693,17 +1718,23 @@ class UI(SQL):
                 return
 
             for idx, i in enumerate(detail.winfo_children()):
-                result = Calculation().get(idx, mix_rates, color_codes)
+                result = self.get_toner(idx, mix_rates, color_codes)
                 if result == False:
                     fail()
                     return
 
                 for id in range(5):
-                    i.children[str(id)]["text"] = str(round(result[id], 2))
+                    i.children[str(id)]["state"] = "normal"
+                    i.children[str(id)].delete(0, "end")
+                    i.children[str(id)].insert(0, str(round(result[id], 2)))
+                    i.children[str(id)]["state"] = "readonly"
 
         def num_filter(text, input, widget):
             try:
-                if text == "" or stop_filter.get() == True: return True
+                if stop_filter.get() == True: return True
+                if text == "":
+                    calculation(widget, text)
+                    return True
                 if input in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."] and text.count(".") < 2 and text.find(".") != 0:
                     float(text)
 
@@ -1747,11 +1778,12 @@ class UI(SQL):
             tk.Entry(frame, name="rate", highlightthickness=2, highlightcolor="SystemButtonFace", validate="all", validatecommand=(frame.register(num_filter), "%P", "%S", "%W")).place(x=30, rely=0.5, anchor="w", width=70, height=22)
             tk.Label(frame, text=str(num + 1).zfill(2)).place(x=105, rely=0.5, anchor="w", width=15, height=22)
             tk.Entry(frame, name="code", highlightthickness=2, highlightcolor="SystemButtonFace", validate="all", validatecommand=(frame.register(input_filter), "%W", "%P", "%d", "calculation", "%W")).place(x=125, rely=0.5, anchor="w", width=70, height=22)
-            tk.Label(frame, name="0", text="-", bd=1, relief="sunken", anchor="center").place(x=200, rely=0.5, anchor="w", width=70, height=22)
-            tk.Label(frame, name="1", text="-", bd=1, relief="sunken", anchor="center").place(x=275, rely=0.5, anchor="w", width=70, height=22)
-            tk.Label(frame, name="2", text="-", bd=1, relief="sunken", anchor="center").place(x=350, rely=0.5, anchor="w", width=70, height=22)
-            tk.Label(frame, name="3", text="-", bd=1, relief="sunken", anchor="center").place(x=425, rely=0.5, anchor="w", width=70, height=22)
-            tk.Label(frame, name="4", text="-", bd=1, relief="sunken", anchor="center").place(x=500, rely=0.5, anchor="w", width=70, height=22)
+
+            tk.Entry(frame, name="0", state="readonly", takefocus=False, bd=1, relief="sunken").place(x=200, rely=0.5, anchor="w", width=70, height=22)
+            tk.Entry(frame, name="1", state="readonly", takefocus=False, bd=1, relief="sunken").place(x=275, rely=0.5, anchor="w", width=70, height=22)
+            tk.Entry(frame, name="2", state="readonly", takefocus=False, bd=1, relief="sunken").place(x=350, rely=0.5, anchor="w", width=70, height=22)
+            tk.Entry(frame, name="3", state="readonly", takefocus=False, bd=1, relief="sunken").place(x=425, rely=0.5, anchor="w", width=70, height=22)
+            tk.Entry(frame, name="4", state="readonly", takefocus=False, bd=1, relief="sunken").place(x=500, rely=0.5, anchor="w", width=70, height=22)
 
             calculation(detail, "", True)
 
@@ -1785,10 +1817,27 @@ class UI(SQL):
             inner_frame.children["entry7"]["state"] = "readonly"
             inner_frame.children["entry8"]["state"] = "readonly"
 
+        def edible_spec(widget, stop_spec):
+            stop_spec.set(True if "selected" in widget.state() else False)
+            detail = two_frame.nametowidget(f"outer{'0' if widget.winfo_name()[-1] == '1' else '1'}.canvas.detail")
+            for p in detail.winfo_children():
+                for i in range(5):
+                    p.children[str(i)]["state"] = "normal" if stop_spec.get() == True else "readonly"
+
         #   COLORMIXDETAIL
         for i in range(2):
             tk.Label(two_frame, text="COLORMIXDETAIL_TBL " + ("3B" if i == 0 else "3P")).grid(row=0 if i == 0 else 2, column=0, pady=2)
+            if data_index == None:
+                check = ttk.Checkbutton(two_frame, name=f"checkspec{str(i + 1)}", takefocus=False, text="Spec 수정")
+                check.grid(row=0 if i == 0 else 2, column=0, padx=(250, 0), pady=2)
+
             detail_gen(two_frame, "outer" + str(i), 1 if i == 0 else 3)
+
+        if data_index == None:
+            two_frame.children["checkspec1"]["command"] = lambda: edible_spec(two_frame.children["checkspec1"], stop_spec[0])
+            two_frame.children["checkspec2"]["command"] = lambda: edible_spec(two_frame.children["checkspec2"], stop_spec[1])
+            two_frame.children["checkspec1"].state(["!alternate"])
+            two_frame.children["checkspec2"].state(["!alternate"])
 
         for p in (two_frame.children["outer0"], two_frame.children["outer1"]):
             for i in range(5):
@@ -1857,14 +1906,18 @@ class UI(SQL):
         entry_kcc = tk.Entry(kcc_frame, name="entry", width=15, takefocus=False)
         entry_kcc.place(relx=0.3, rely=0.5, anchor="w")
 
-        login_frame = tk.Frame(inner_frame, width=190, height=60)
-        login_frame.place(relx=0.5, rely=0.6, anchor="center")
-        tk.Label(login_frame, text="아이디: ").place(relx=0.13, rely=0.35, anchor="w")
+        login_frame = tk.Frame(inner_frame, width=190, height=75)
+        login_frame.place(relx=0.5, rely=0.58, anchor="center")
+        tk.Label(login_frame, text="페인트타입: ").place(relx=0.08, rely=0.28, anchor="w")
+        type_entry = tk.Entry(login_frame, takefocus=False, width=10)
+        type_entry.place(relx=0.46, rely=0.28, anchor="w")
+        type_entry.insert(0, "BC")
+        tk.Label(login_frame, text="아이디: ").place(relx=0.08, rely=0.58, anchor="w")
         id_entry = tk.Entry(login_frame, takefocus=False, width=10)
-        id_entry.place(relx=0.46, rely=0.3, anchor="w")
-        tk.Label(login_frame, text="비밀번호: ").place(relx=0.13, rely=0.65, anchor="w")
+        id_entry.place(relx=0.46, rely=0.58, anchor="w")
+        tk.Label(login_frame, text="비밀번호: ").place(relx=0.08, rely=0.88, anchor="w")
         pwd_entry = tk.Entry(login_frame, takefocus=False, width=10)
-        pwd_entry.place(relx=0.46, rely=0.7, anchor="w")
+        pwd_entry.place(relx=0.46, rely=0.88, anchor="w")
 
         def crawling_entry_switch():
             if company.get() == 0:
@@ -1880,8 +1933,14 @@ class UI(SQL):
                 noru_frame.place_forget()
                 noru_frame2.place_forget()
 
-        tk.Radiobutton(inner_frame, text="노루", value=0, variable=company, command=crawling_entry_switch, takefocus=False).place(relx=0.3, rely=0.075, anchor="center")
-        tk.Radiobutton(inner_frame, text="KCC", value=1, variable=company, command=crawling_entry_switch, takefocus=False).place(relx=0.7, rely=0.075, anchor="center")
+        tk.Radiobutton(inner_frame, text="노루", value=0, variable=company, command=crawling_entry_switch, takefocus=False).place(relx=0.15, rely=0.075, anchor="center")
+        tk.Radiobutton(inner_frame, text="KCC", value=1, variable=company, command=crawling_entry_switch, takefocus=False).place(relx=0.4, rely=0.075, anchor="center")
+        tk.Label(inner_frame, text="유지").place(relx=0.615, rely=0.075, anchor="center")
+        colorgubun_check = ttk.Checkbutton(inner_frame, takefocus=False)
+        colorgubun_check.place(relx=0.75, rely=0.075, anchor="center")
+        colorgubun_check.state(["!alternate"])
+        colorgubun = tk.Entry(inner_frame, takefocus=False)
+        colorgubun.place(relx=0.87, rely=0.075, width=30, anchor="center")
 
         def get_site_data():
             alert_frame = tk.Frame(data_frame, bd=4, relief="solid")
@@ -1894,6 +1953,8 @@ class UI(SQL):
             alert_frame.lift()
             self.window.update_idletasks()
 
+            inner_frame["text"] = "크롤링 [상태: 성공]"
+
             try:
                 _ID = id_entry.get()
                 _PWD = pwd_entry.get()
@@ -1904,7 +1965,7 @@ class UI(SQL):
                     alert_frame.destroy()
                     return
                 
-                result = Crawling().open(_ID, _PWD, ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get()), True)
+                result = Crawling().open(_ID, _PWD, ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get()), type_entry.get(), True)
             except:
                 inner_frame["text"] = "크롤링 [상태: 실패]"
                 tkbox.showerror("실패", "데이터를 가져오지 못했습니다.")
@@ -1921,11 +1982,13 @@ class UI(SQL):
             detail_data_3B = result[1]
             detail_data_3P = result[2]
 
+            if result[3]:
+                isnormal.set(1)
+                show_normal_cott()
+
             # insert data
             clear(False)
-
-            if str_three.get() == "":
-                str_three.set("BC")
+            str_three.set(type_entry.get())
 
             stop_filter.set(True)
 
@@ -1934,6 +1997,9 @@ class UI(SQL):
                 four_frame.children["frame" + str(i)].children["entry1"].insert(0, data["ColorNm(3B)"] if i == 0 else data["ColorNm(3P)"])
                 #ColorCode
                 four_frame.children["frame" + str(i)].children["entry4"].insert(0, data["ColorCode"])
+                #ColorGubun
+                if "selected" in colorgubun_check.state():
+                    one_frame.children["frame" + str(i)].children["entry6"].insert(0, colorgubun.get())
                 #MixDate
                 one_frame.children["frame" + str(i)].children["entry14"].insert(0, data["MixDate"])
                 #StdDesc
@@ -1954,7 +2020,7 @@ class UI(SQL):
                     try:
                         three_frame.children["frame" + str(i)].children["combobox2"].set(colormixstd_match[data["ColorMixStd"].replace(" ", "")])
                     except:
-                        tkbox.showerror("경고", "ColorMixStd에 해당하는 코드가 없습니다.\nColorMixStd 값을 꼭 수정해주세요.")
+                        inner_frame["text"] = "크롤링 [상테: StdDesc 없음.]"
 
                 for p in range(len(detail_data_3B if i == 0 else detail_data_3P)):
                     add(two_frame.children["outer" + str(i)])
@@ -1968,12 +2034,10 @@ class UI(SQL):
                     calculation(two_frame.children["outer1"].children["canvas"].children["detail"], "", True)
             
             stop_filter.set(False)
-
-            inner_frame["text"] = "크롤링 [상태: 성공]"
             alert_frame.destroy()
 
-        tk.Button(inner_frame, text="가져오기", takefocus=False, command=get_site_data, width=10).place(relx=0.25, rely=0.85, anchor="center")
-        tk.Button(inner_frame, text="열기", takefocus=False, command=lambda: Crawling().open(id_entry.get(), pwd_entry.get(), ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get())), width=10).place(relx=0.75, rely=0.85, anchor="center")
+        tk.Button(inner_frame, text="가져오기", takefocus=False, command=get_site_data, width=10).place(relx=0.25, rely=0.9, anchor="center")
+        tk.Button(inner_frame, text="열기", takefocus=False, command=lambda: Crawling().open(id_entry.get(), pwd_entry.get(), ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get()), type_entry.get()), width=10).place(relx=0.75, rely=0.9, anchor="center")
 
         def show_normal_cott():
             if isnormal.get() == 0:
@@ -1987,6 +2051,8 @@ class UI(SQL):
                 one_frame.children["frame1"].children["entry6"].delete(0, "end")
 
                 two_frame.children["!label2"].grid_remove()
+                if data_index == None:
+                    two_frame.children["checkspec2"].grid_remove()
                 two_frame.children["outer1"].grid_remove()
 
                 three_frame.children["!label2"].grid_remove()
@@ -2014,6 +2080,8 @@ class UI(SQL):
                 one_frame.children["frame1"].children["entry6"]["state"] = "readonly"
 
                 two_frame.children["!label2"].grid()
+                if data_index == None:
+                    two_frame.children["checkspec2"].grid()
                 two_frame.children["outer1"].grid()
 
                 three_frame.children["!label2"].grid()
@@ -2443,10 +2511,9 @@ class UI(SQL):
         save_button = tk.Button(data_frame, text="저장하기", command=ready_for_save)
         save_button.place(relx=0.75, rely=0.96)
         save_button.bind("<Return>", lambda e: ready_for_save())
-        if data_index != None:
-            tk.Button(data_frame, name="force", text="강제수정 (꺼짐)", bg="#F88787", takefocus=False, command=force_edit).place(relx=0.6, rely=0.96)
-        else:
-            tk.Button(data_frame, text="내역보기", takefocus=False, command=color_toplevel).place(relx=0.6, rely=0.96)
+        tk.Button(data_frame, name="force", text="강제수정 (꺼짐)", bg="#F88787", takefocus=False, command=force_edit).place(relx=0.635, rely=0.96)
+        if data_index == None:
+            tk.Button(data_frame, text="내역보기", takefocus=False, command=color_toplevel).place(relx=0.565, rely=0.96)
         tk.Button(data_frame, text="뒤로가기", takefocus=False, command=lambda: self.change_frames(main_frame, data_frame, 400, 400)).place(relx=0.85, rely=0.96)
 
     def setting(self):
@@ -2938,7 +3005,22 @@ class UI(SQL):
             scrollbar.configure(command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
 
-            context = """V0.41(2024.04.11)
+            context = """V0.5(2024.06.10)
+        + 가져오는 데이터가 3코트인지 체크하는 기능추가
+        + 이제 비중이 new_auto.mdb를 기준으로 함.
+        + 크롤링 상태 표시 일부 수정.
+        + ColorGubun 입력칸 추가.
+
+V0.43(2024.04.29)
+        + 모든 입력칸에 직접 입력이 가능하게 수정.
+
+V0.42(2024.04.25)
+        + Spec칸에 직접 입력이 가능하게 수정.
+        + 비중에 'CLEAR','HARDER'를 추가함.
+        + PaintTy에 따라 데이터를 가져오는 형식이
+        달라짐.
+
+V0.41(2024.04.11)
         + 데이터 가져올 시 ColorMixStd 매치가 되지않아
         발생한 프리징 현상을 해결함.
         + 업데이트 코드를 좀 더 좋게 변경함.

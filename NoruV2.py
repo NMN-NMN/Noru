@@ -324,7 +324,8 @@ class SQL():
 
                     input_columns = ""
                     for column in columns:
-                        input_columns += f"[{column}], "
+                        if column != "order":
+                            input_columns += f"[{column}], "
                     input_columns = f"({input_columns[:-2]})"
 
                     if index == 1:
@@ -361,6 +362,7 @@ class SQL():
                             cursor.commit()
                 
                 if cursor_index == 0:
+                    pass
                     cursor.execute(f"INSERT INTO RECORD ([TYPE], [INDEX], [_DATE], [TRASH]) VALUES (\'DATA\', {input_index}, NOW(), FALSE)")
                     cursor.commit()
                         
@@ -1062,18 +1064,14 @@ class SQL():
                             del temp_cott[1][0]
                         else:
                             break
-                    
+
                     for i in range(4):
                         if i != 1:
                             del result[i][1]
                         else:
-                            temp_index = 0
-
-                            for i in range(len(result[1])):
-                                if result[1][temp_index][0] == temp_cott[1][temp_index][0]:
-                                    del result[1][temp_index]
-                                else:
-                                    temp_index += 1
+                            for copy_cott in temp_cott[1]:
+                                if copy_cott in result[1]:
+                                    del result[1][result[1].index(copy_cott)]
 
                     result.append(temp_cott)
                 
@@ -3005,7 +3003,10 @@ class UI(SQL, Calculation):
             scrollbar.configure(command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
 
-            context = """V0.5(2024.06.10)
+            context = """V0.51(2024.06.20)
+        + 기록조회시 3코드를 불러올때 멈추는 버그 수정
+
+V0.5(2024.06.10)
         + 가져오는 데이터가 3코트인지 체크하는 기능추가
         + 이제 비중이 new_auto.mdb를 기준으로 함.
         + 크롤링 상태 표시 일부 수정.
@@ -3092,7 +3093,7 @@ V0.1 (2024.03.03):
         except: return
 
 if __name__ == "__main__":
-    IS_SOURCES = False
+    IS_SOURCES = True if os.path.splitext(__file__)[1] == ".py" else False
 
     if IS_SOURCES:
         UI()

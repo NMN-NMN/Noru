@@ -19,7 +19,7 @@ from selenium.webdriver.chrome.service import Service
 import pyodbc
 
 class Crawling():
-    def get(self, driver, mode, isThree):
+    def get(self, driver, mode, isThree, code):
         # KCC: ColorNm(3B), ColorNm(3P), ColorCode, MixDate, StdDesc, CarNm, ApplyYear, MixInfo
         # Noru: ColorNm(3B), ColorNm(3P), ColorCode, MixDate, StdDesc, CarNm, ApplyYear, MixInfo, MixCd, ColorMixStd
         data = {}
@@ -34,6 +34,16 @@ class Crawling():
             data["CarNm"] = driver.find_element(By.XPATH, "//*[@id=\"contentArea\"]/div[2]/div[3]/div[1]/table/tbody/tr[2]/td").text
             data["ApplyYear"] = driver.find_element(By.XPATH, "//*[@id=\"contentArea\"]/div[2]/div[3]/div[1]/table/tbody/tr[3]/td").text
             data["MixInfo"] = driver.find_element(By.XPATH, "//*[@id=\"contentArea\"]/div[2]/div[4]/div/div").text
+
+            mixinfo2 = driver.find_element(By.XPATH, "//*[@id=\"contentArea\"]/div[2]/div[2]/div[1]/table/tbody/tr[6]/td").text
+            mixinfo3 = code
+
+            if mixinfo2 != "-":
+                mixinfo2 = f"거래처명 : {mixinfo2} "
+            else:
+                mixinfo2 = ""
+
+            data["MixInfo"] = f"{data['MixInfo']} {mixinfo2}{mixinfo3}"
 
             data["MixDate"] = data["MixDate"].replace(".", "")
             data["ApplyYear"] = data["ApplyYear"][:data["ApplyYear"].find(".")]
@@ -130,10 +140,10 @@ class Crawling():
             driver.find_element(By.ID, "pwd").send_keys(_PWD)
             time.sleep(0.5)
             driver.find_element(By.ID, "btnLogin").click()
-            time.sleep(0.5)
+            time.sleep(1.5)
 
-            if driver.find_element(By.XPATH, "/html/body/div[5]/div").is_displayed():
-                return False
+            # if driver.find_element(By.XPATH, "/html/body/div[5]/div").is_displayed():
+            #     return False
 
             driver.get("https://refinish.co.kr/user/color/colorSearch_view/" + code)
             time.sleep(0.5)
@@ -228,7 +238,7 @@ class Crawling():
                         break
 
         if isGet:
-            return self.get(driver, mode, isThree)
+            return self.get(driver, mode, isThree, code)
 
 class SQL():
     cursors = ["", ""]
@@ -1881,7 +1891,7 @@ class UI(SQL, Calculation):
             inner_frame.children["entry0"]["state"] = "readonly"
         
         #   크롤링 부분
-        inner_frame = tk.LabelFrame(two_frame, text="크롤링 [상태:       ]", labelanchor="n", width=200, height=228)
+        inner_frame = tk.LabelFrame(two_frame, text="크롤링 [상태:       ]", labelanchor="n", width=200, height=328)
         inner_frame.grid(row=0, column=1, rowspan=4, padx=(10, 0), sticky="w")
 
         noru_frame = tk.Frame(inner_frame, width=190, height=60)
@@ -2018,7 +2028,7 @@ class UI(SQL, Calculation):
                     try:
                         three_frame.children["frame" + str(i)].children["combobox2"].set(colormixstd_match[data["ColorMixStd"].replace(" ", "")])
                     except:
-                        inner_frame["text"] = "크롤링 [상테: StdDesc 없음.]"
+                        inner_frame["text"] = "크롤링 [상태: StdDesc 없음.]"
 
                 for p in range(len(detail_data_3B if i == 0 else detail_data_3P)):
                     add(two_frame.children["outer" + str(i)])
@@ -2026,6 +2036,11 @@ class UI(SQL, Calculation):
                 for detail, frame in zip(detail_data_3B if i == 0 else detail_data_3P, two_frame.children["outer" + str(i)].children["canvas"].children["detail"].winfo_children()):
                     frame.children["rate"].insert(0, detail[1])
                     frame.children["code"].insert(0, detail[0])
+                
+                if len(detail_data_3B) > 0:
+                    inner_frame["text"] = "데이터 O"
+                else:
+                    inner_frame["text"] = "데이터 X"
 
                 calculation(two_frame.children["outer0"].children["canvas"].children["detail"], "", True)
                 if i == 1:
@@ -2034,8 +2049,8 @@ class UI(SQL, Calculation):
             stop_filter.set(False)
             alert_frame.destroy()
 
-        tk.Button(inner_frame, text="가져오기", takefocus=False, command=get_site_data, width=10).place(relx=0.25, rely=0.9, anchor="center")
-        tk.Button(inner_frame, text="열기", takefocus=False, command=lambda: Crawling().open(id_entry.get(), pwd_entry.get(), ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get()), type_entry.get()), width=10).place(relx=0.75, rely=0.9, anchor="center")
+        tk.Button(inner_frame, text="가져오기", takefocus=False, command=get_site_data, width=10).place(relx=0.25, rely=0.82, anchor="center")
+        tk.Button(inner_frame, text="열기", takefocus=False, command=lambda: Crawling().open(id_entry.get(), pwd_entry.get(), ([entry_3b.get(), entry_3p.get()] if isnormal.get() == 1 else [entry_noru.get()]) if company.get() == 0 else entry_kcc.get(),"noru" if company.get() == 0 else "kcc", bool(isnormal.get()), type_entry.get()), width=10).place(relx=0.75, rely=0.82, anchor="center")
 
         def show_normal_cott():
             if isnormal.get() == 0:
@@ -2506,12 +2521,12 @@ class UI(SQL, Calculation):
         tk.Button(data_frame, text="지우기", takefocus=False, command=lambda: clear(False)).place(relx=0.25, rely=0.96)
         tk.Button(data_frame, text="지우기 (고정값)", takefocus=False, command=lambda: clear(True)).place(relx=0.3125, rely=0.96)
         tk.Button(data_frame, name="default", text="기본값으로 초기화", takefocus=False, command=reset).place(relx=0.425, rely=0.96)
-        save_button = tk.Button(data_frame, text="저장하기", command=ready_for_save)
-        save_button.place(relx=0.75, rely=0.96)
+        save_button = tk.Button(inner_frame, text="저장하기", command=ready_for_save, width=10)
+        save_button.place(relx=0.25, rely=0.92, anchor="center")
         save_button.bind("<Return>", lambda e: ready_for_save())
         tk.Button(data_frame, name="force", text="강제수정 (꺼짐)", bg="#F88787", takefocus=False, command=force_edit).place(relx=0.635, rely=0.96)
         if data_index == None:
-            tk.Button(data_frame, text="내역보기", takefocus=False, command=color_toplevel).place(relx=0.565, rely=0.96)
+            tk.Button(inner_frame, text="내역보기", takefocus=False, command=color_toplevel, width=10).place(relx=0.75, rely=0.92, anchor="center")
         tk.Button(data_frame, text="뒤로가기", takefocus=False, command=lambda: self.change_frames(main_frame, data_frame, 400, 400)).place(relx=0.85, rely=0.96)
 
     def setting(self):
@@ -3003,7 +3018,12 @@ class UI(SQL, Calculation):
             scrollbar.configure(command=canvas.yview)
             canvas.configure(yscrollcommand=scrollbar.set)
 
-            context = """V0.51(2024.06.20)
+            context = """V0.52(2024.07.18)
+        + KCC 크롤링시 멈추는 버그 수정
+        + KCC 데이터를 불러오는 과정이 달라졌으므로
+        일부 수정.
+
+V0.51(2024.06.20)
         + 기록조회시 3코드를 불러올때 멈추는 버그 수정
 
 V0.5(2024.06.10)
@@ -3093,7 +3113,7 @@ V0.1 (2024.03.03):
         except: return
 
 if __name__ == "__main__":
-    IS_SOURCES = True if os.path.splitext(__file__)[1] == ".py" else False
+    IS_SOURCES = False
 
     if IS_SOURCES:
         UI()

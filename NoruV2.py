@@ -1612,7 +1612,7 @@ class UI(SQL, Calculation):
 
     def data_setting(self, data_frame, main_frame, data_index = None):
         str_one = tk.StringVar()
-        str_two = tk.StringVar() 
+        str_two = tk.StringVar()
         str_three = tk.StringVar()
         isnormal = tk.IntVar()
         company = tk.IntVar()
@@ -2039,8 +2039,12 @@ class UI(SQL, Calculation):
                 
                 if len(detail_data_3B) > 0:
                     inner_frame["text"] = "데이터 O"
+                    two_frame.children["checkspec1"].state(["!alternate", "!selected"])
+                    two_frame.children["checkspec2"].state(["!alternate", "!selected"])
                 else:
                     inner_frame["text"] = "데이터 X"
+                    two_frame.children["checkspec1"].state(["!alternate", "selected"])
+                    two_frame.children["checkspec2"].state(["!alternate", "selected"])
 
                 calculation(two_frame.children["outer0"].children["canvas"].children["detail"], "", True)
                 if i == 1:
@@ -2205,7 +2209,7 @@ class UI(SQL, Calculation):
                 one_frame.children["frame1"].children["entry6"].insert(0, "3P")
 
             str_three.set("BC")
-        
+
         def force_edit():
             isok = tkbox.askquestion("경고", "일부 기능이 작동하지 않습니다.\n강제 수정을 끌 경우, 일부 데이터가 훼손될 수 있습니다.")
             if isok == "no":
@@ -2521,7 +2525,7 @@ class UI(SQL, Calculation):
         tk.Button(data_frame, text="지우기", takefocus=False, command=lambda: clear(False)).place(relx=0.25, rely=0.96)
         tk.Button(data_frame, text="지우기 (고정값)", takefocus=False, command=lambda: clear(True)).place(relx=0.3125, rely=0.96)
         tk.Button(data_frame, name="default", text="기본값으로 초기화", takefocus=False, command=reset).place(relx=0.425, rely=0.96)
-        save_button = tk.Button(inner_frame, text="저장하기", command=ready_for_save, width=10)
+        save_button = tk.Button(inner_frame, takefocus=False, text="저장하기", command=ready_for_save, width=10)
         save_button.place(relx=0.25, rely=0.92, anchor="center")
         save_button.bind("<Return>", lambda e: ready_for_save())
         tk.Button(data_frame, name="force", text="강제수정 (꺼짐)", bg="#F88787", takefocus=False, command=force_edit).place(relx=0.635, rely=0.96)
